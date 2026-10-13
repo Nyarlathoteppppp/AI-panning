@@ -10,7 +10,7 @@
 ## Narrative arc
 **Mystery → Investigation → Resolution**: pose the hook, build the two consistency lines and their matching equations, then follow one point through exact PI zig-zags and shorter VI hops. Resolve at the shared fixed point, connect to the course fact π₀ → π₁, and summarize the GPI loop.
 
-**Axes carry meaning**: x = 策略 π, y = 价值 V (small DIM Text at the arrow ends of an L-shaped axis). The blue line `V = v_π` is a graph over x (each π has one true value); the orange line `π = greedy(V)` is a graph over y (each V has one greedy policy). Hence evaluation (π fixed) is a **vertical** hop and improvement (V fixed) a **horizontal** hop. The orange line is steeper (slope 0.66 vs 0.22, same optimum (0.78125, 0.321875)), so the hops form a staircase whose V never decreases — the policy improvement theorem in one picture.
+**Axes carry meaning**: x = 策略 π, y = 价值 V (small DIM Text at the arrow ends of an L-shaped axis). The blue line `V = v_π` is a graph over x (each π has one true value); the orange line `π = greedy(V)` is a graph over y (each V has one greedy policy). Hence evaluation (π fixed) is a **vertical** hop and improvement (V fixed) a **horizontal** hop. This is a schematic projection of high-dimensional objects, not a numerical plot or a proof of convergence; the screen explicitly labels that distinction.
 
 ## Layout regions
 - **Process strip**: top, y≈3.55; persistent ①评估 ②改进 ③来回走 ④VI与PI, active stage underlined.
@@ -34,16 +34,18 @@
 
 ### 3. Improvement line — 5 s
 - **Visuals**: strip ② lights while the orange line and MathTex label `π=\text{greedy}(V)` appear.
-- **Math**: `π'(s) = argmaxₐ q_π(s,a)` in OPEN_COL.
+- **Math**: `π_new(s) = argmaxₐ Σ p(s′|s,a)[r + γ V(s′)]` in OPEN_COL.
 - **Caption**: “橙线上：π 正好对 V 做贪心选择”.
 
 ### 4. PI exact staircase / aha — 14 s
 - **Visuals**: start `π_0, V_0` off both lines; vertical blue hop to the blue line, horizontal orange hop to the orange line, then ever-shorter steps and a gold tail into the intersection labelled `V^*, π^*`.
 - **Sync rule**: before each of the first two hops, stage + caption + formula switch in **one** play, then the hop: ① “精确评估：π 不动，V 竖直走到蓝线” (blue formula), ② “贪心改进：V 不动，π 水平走到橙线” (orange formula). Then ③ “台阶越走越小，收进两线交点” while the formula swaps with every hop. Hold 1.5 s on the intersection.
 
-### 5. VI half steps — 10 s
-- **Visuals**: same start; each hop goes half way (dashed line = the full hop) — vertical then horizontal; after 8 hops a gold staircase tail glides into the intersection (`→ V^*, π^*`). Strip ④.
-- **Caption**: “VI：每步只走一半，虚线是到线的全程” → “小步也一样：竖着评估、横着改进” → “VI 走小步；重复以后也收敛”.
+### 5. VI: full greedy improvement, one evaluation backup — 10 s
+- **Visuals**: horizontal orange hops land ON the greedy line; vertical blue hops are partial evaluation (schematic distance only).
+- **Order**: greedify V_k to π_{k+1}, then perform one Bellman evaluation sweep to obtain V_{k+1}. This equals the max Bellman backup.
+- **Math**: V_{k+1}(s) = Σ p(s′|s,π_{k+1}(s))[r+γV_k(s′)]. This is not the fixed-point v_π equation shown during exact PI.
+- **Caption**: “VI：先完整取贪心动作，再做一次 Bellman 更新” → “橙色到线；蓝色只更新一次，不评估到收敛” → “反复完整取 max、更新 V，直到收敛”.
 
 ### 6. Course fact and summary — 10 s
 - **Visuals**: fact panel above the plane (intersection stays visible): “课件例子：π₀ → π₁；π₁ 已最优”. Then clear the plane and show the colored “评估 ⇄ 改进” summary and takeaway.

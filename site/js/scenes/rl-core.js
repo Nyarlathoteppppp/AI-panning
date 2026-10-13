@@ -141,7 +141,7 @@
       st.add('root', 'circle', { cx: 382, cy: YR, r: 22, fill: PAL.panel, stroke: PAL.blue, 'stroke-width': 2.5 });
       st.tex('rootl', 382, YR, 's_{10}', { w: 50, h: 24, size: 16 });
       st.num('rootv', 442, YR, V1[10], { digits: 3, size: 17, color: PAL.blue, weight: 650 });
-      st.tex('rootvl', 500, YR, R`=V_1(s_{10})`, { w: 110, h: 24, size: 14, color: PAL.blue, op: 0.8 });
+      st.tex('rootvl', 520, YR, R`=V_1(s_{10})`, { w: 140, h: 24, size: 14, color: PAL.blue, op: 0.8 });
       acts.forEach((a, ai) => {
         st.add('an' + ai, 'rect', { x: AX[ai] - 18, y: YA - 16, width: 36, height: 32, rx: 6, fill: PAL.panel, stroke: PAL.teal, 'stroke-width': 2 });
         st.text('al' + ai, AX[ai], YA, a, { size: 15, weight: 650 });
@@ -165,7 +165,7 @@
       const fade = q => Math.min(1, 4 * q, 4 * (1 - q));
       const qTex = ai => leaves[ai].map(l => f3(l.p) .replace(/0+$/, '').replace(/\.$/, '') + R`\times` + f3(l.val)).join('+');
       const frames = [];
-      const T = R`\htmlClass{fx-V}{V(s)}=\max_a\sum_{s'}\htmlClass{fx-p}{p(s'\mid s,a)}\big[\htmlClass{fx-r}{r}+\htmlClass{fx-gamma}{\gamma}\,\htmlClass{fx-Vn}{V(s')}\big]`;
+      const T = R`\htmlClass{fx-V}{V_2(s)}=\max_a\sum_{s'}\htmlClass{fx-p}{p(s'\mid s,a)}\big[\htmlClass{fx-r}{r}+\htmlClass{fx-gamma}{\gamma}\,\htmlClass{fx-Vn}{V_1(s')}\big]`;
       frames.push({ cap: '**$s_{10}$ 的价值，怎么用周围格子的价值算出来？** 把这一步摊开成一棵小树：根是 $s_{10}$，下面 4 个动作，每个动作分出 3 个可能结果（0.8 按意图、0.1 / 0.1 打滑）。叶子下面是这一步的奖励 $r$ 和下一状态现在的估计 $V_1(s\')$。' });
       frames.push({
         set: util.merge({ 'leg3.op': 1 }, util.each(4, ai => util.each(3, j => ({ ['lt' + ai + j + '.op']: 1 })))),
@@ -177,7 +177,7 @@
         set: util.merge(util.each(3, j => ({ ['mv1' + j + '.tx']: AX[1] + 44, ['mv1' + j + '.ty']: YA, ['mv1' + j + '.sc']: 0.6 })), { 'aq1.op': 1 }),
         fn: util.each(3, j => ({ ['mv1' + j + '.op']: fade })),
         timing: util.merge(util.each(3, j => ({ ['mv1' + j + '.op']: [j * 0.1, 0.75 + j * 0.08], ['mv1' + j + '.tx']: [j * 0.1, 0.65 + j * 0.1], ['mv1' + j + '.ty']: [j * 0.1, 0.65 + j * 0.1], ['mv1' + j + '.sc']: [j * 0.1, 0.65 + j * 0.1] })), { 'aq1': [0.75, 1] }),
-        dur: 1800, pulse: ['an1'], hl: ['p', 'Q'], tex: R`\htmlClass{fx-Q}{Q(s,a)}=\sum_{s'}\htmlClass{fx-p}{p(s'\mid s,a)}\big[\htmlClass{fx-r}{r}+\htmlClass{fx-gamma}{\gamma}\,\htmlClass{fx-Vn}{V(s')}\big]`,
+        dur: 1800, pulse: ['an1'], hl: ['p', 'Q'], tex: R`\htmlClass{fx-Q}{Q(s,a)}=\sum_{s'}\htmlClass{fx-p}{p(s'\mid s,a)}\big[\htmlClass{fx-r}{r}+\htmlClass{fx-gamma}{\gamma}\,\htmlClass{fx-Vn}{V_1(s')}\big]`,
         cap: '**再按概率加权，汇到动作上。** 动作 E：$Q(s_{10},E)=' + qTex(1) + '=' + f3(Q[1]) + '$。每片叶子先乘自己的概率，再一起加起来。'
       });
       frames.push({
@@ -193,10 +193,10 @@
         cap: '**最后取最大：** $V_2(s_{10})=\\max(' + Q.map(f3).join(',\\ ') + ')=' + f3(Q[best]) + '$，最好的动作是 ' + acts[best] + '。这就是 Bellman **最优**方程的一次备份。'
       });
       frames.push({
-        set: util.merge(util.each(4, ai => ({ ['an' + ai + '.op']: 1, ['aq' + ai + '.op']: 1, ['ea' + ai + '.op']: 1, ['ea' + ai + '.stroke']: PAL.orange, ['ea' + ai + '.stroke-width']: 2.5 })), { 'rootv.num': avg, 'rootvl.tex': R`=v_\pi(s_{10})`, 'rootvl.color': PAL.orange, 'rootv.fill': PAL.orange }),
+        set: util.merge(util.each(4, ai => ({ ['an' + ai + '.op']: 1, ['aq' + ai + '.op']: 1, ['ea' + ai + '.op']: 1, ['ea' + ai + '.stroke']: PAL.orange, ['ea' + ai + '.stroke-width']: 2.5 })), { 'rootv.num': avg, 'rootvl.tex': R`=(T_\pi V_1)(s_{10})`, 'rootvl.color': PAL.orange, 'rootv.fill': PAL.orange }),
         pulse: ['root'], dur: 1300, hl: ['pi'],
-        tex: R`\htmlClass{fx-V}{v_\pi(s)}=\sum_a\htmlClass{fx-pi}{\pi(a\mid s)}\,\htmlClass{fx-Q}{q_\pi(s,a)}`,
-        cap: '对比 Bellman **期望**方程：如果 policy 是四个方向各 $\\tfrac14$ 的随机策略，就不取最大，而是按 $\\pi$ 加权平均：$\\tfrac14(' + Q.map(f3).join('+') + ')=' + f3(avg) + '$。树的下半部分完全一样，区别只在根这一层“取 max”还是“按 $\\pi$ 平均”。'
+        tex: R`\htmlClass{fx-V}{(T_\pi V_1)(s)}=\sum_a\htmlClass{fx-pi}{\pi(a\mid s)}\sum_{s'}p(s'\mid s,a)[r+\gamma V_1(s')]`,
+        cap: '对比一次 Bellman **期望备份**：如果 policy 是四个方向各 $\\tfrac14$ 的随机策略，就不取最大，而是按 $\\pi$ 加权平均：$\\tfrac14(' + Q.map(f3).join('+') + ')=' + f3(avg) + '$。这得到的是对旧表 $V_1$ 做一次备份的 0.430，**不是**随机策略已收敛的 $v_\\pi$。'
       });
       return frames;
     }

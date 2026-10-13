@@ -122,16 +122,16 @@
       frames.push({ set: { 'pickC.op': 1, 'pickCl.op': 1, 'pickB.op': 1, 'pickBl.op': 1 }, timing: { pickC: [0, 0.5], pickCl: [0, 0.5], pickB: [0.4, 0.9], pickBl: [0.4, 0.9] }, dur: 1200,
         cap: '在 $B$ 用 ε-greedy 选下一步：这次随机选到了 Left（0.4），而 $B$ 里最好的其实是 Right（0.8）。两种算法的区别只在于：**target 里用哪一个**。' });
       frames.push({
-        set: { 'flyS.op': 1, 'flyS.tx': X(tS), 'flyS.ty': YS - 34, 'flynS.num': tS, 'tgS.op': 1, 'tgS.d': tri(X(tS), YS), 'xg.text': '×γ = 0.9' },
-        timing: { flyS: [0, 0.7], flynS: [0.3, 0.7], tgS: [0.7, 1] }, fn: { 'flyS.op': q => Math.min(1, 6 * q, 5 * (1 - q)) }, dur: 1600, tex: TS, hl: ['sarsa', 'gamma'],
+        set: { 'flyS.op': 0, 'tgnS.op': 1, 'tgnS.x': X(tS), 'tgnS.num': tS, 'flyS.tx': X(tS), 'flyS.ty': YS - 34, 'flynS.num': tS, 'tgS.op': 1, 'tgS.d': tri(X(tS), YS), 'xg.text': '×γ = 0.9' },
+        timing: { flyS: [0, 0.7], flynS: [0.3, 0.7], tgS: [0.7, 1], tgnS: [0.7, 1] }, fn: { 'flyS.op': q => Math.min(1, 6 * q, 5 * (1 - q)) }, dur: 1600, tex: TS, hl: ['sarsa', 'gamma'],
         cap: '**SARSA** 用**实际选中的**下一步：$0+0.9\\times0.4=' + f(tS, 2) + '$（粉色 target）。它评估的是“我自己这套会偶尔乱走的 policy”。'
       });
       frames.push({ set: { 'dotS.cx': X(qS), 'dnS.x': X(qS), 'dnS.num': qS, 'xg.text': '' }, dur: 1100, pulse: ['dotS'],
         tex: R`Q(S,A)\leftarrow0.5+\alpha(${f(tS, 2)}-0.5)=${f(qS, 3)}`,
         cap: 'target 0.36 比旧值 0.5 低，SARSA 把 $Q(S,A)$ **往下**拉一点：$0.5+0.1\\times(0.36-0.5)=' + f(qS, 3) + '$。' });
       frames.push({
-        set: { 'flyQ.op': 1, 'flyQ.tx': X(tQ), 'flyQ.ty': YQ - 34, 'flynQ.num': tQ, 'tgQ.op': 1, 'tgQ.d': tri(X(tQ), YQ), 'xg.text': '×γ = 0.9' },
-        timing: { flyQ: [0, 0.7], flynQ: [0.3, 0.7], tgQ: [0.7, 1] }, fn: { 'flyQ.op': q => Math.min(1, 6 * q, 5 * (1 - q)) }, dur: 1600, tex: TQ, hl: ['ql', 'gamma'],
+        set: { 'flyQ.op': 0, 'tgnQ.op': 1, 'tgnQ.x': X(tQ), 'tgnQ.num': tQ, 'flyQ.tx': X(tQ), 'flyQ.ty': YQ - 34, 'flynQ.num': tQ, 'tgQ.op': 1, 'tgQ.d': tri(X(tQ), YQ), 'xg.text': '×γ = 0.9' },
+        timing: { flyQ: [0, 0.7], flynQ: [0.3, 0.7], tgQ: [0.7, 1], tgnQ: [0.7, 1] }, fn: { 'flyQ.op': q => Math.min(1, 6 * q, 5 * (1 - q)) }, dur: 1600, tex: TQ, hl: ['ql', 'gamma'],
         cap: '**Q-learning** 不管实际选了什么，用 $B$ 里**最好的**：$0+0.9\\times0.8=' + f(tQ, 2) + '$。它评估的是“以后都贪心”的 policy。'
       });
       frames.push({ set: { 'dotQ.cx': X(qQ), 'dnQ.x': X(qQ), 'dnQ.num': qQ, 'xg.text': '' }, dur: 1100, pulse: ['dotQ'],
@@ -167,7 +167,8 @@
       st.add('gB', 'rect', { x: XG - 30, y: BASE - GB * SC, width: 60, height: GB * SC, fill: PAL.gold, 'fill-opacity': 0.8, rx: 3 });
       st.text('gBl', XG, BASE + 18, 'G（选 B）= 99', { size: 12, color: PAL.gold });
       st.add('bb', 'rect', { x: XB - 30, y: BASE, width: 60, height: 0, fill: PAL.teal, 'fill-opacity': 0.8, rx: 3 });
-      st.num('bbn', XB, BASE + 18, 0, { digits: 3, trim: true, size: 12, color: PAL.teal, prefix: 'b = ' });
+      st.num('bbn', XB, BASE + 18, 0, { digits: 3, trim: true, size: 12, color: PAL.teal, prefix: 'b旧 = ' });
+      st.num('bnext', XB, BASE + 39, 0, { digits: 3, trim: true, size: 11, color: PAL.dim, prefix: '更新后 b新 = ' });
       st.add('dl', 'line', { x1: XB + 40, y1: BASE - GB * SC, x2: XB + 40, y2: BASE, stroke: PAL.red, 'stroke-width': 4 });
       st.add('dtop', 'line', { x1: XG + 30, y1: BASE - GB * SC, x2: XB + 46, y2: BASE - GB * SC, stroke: PAL.red, 'stroke-width': 1, 'stroke-dasharray': '4 3' });
       st.num('dn', XB + 52, BASE - GB * SC / 2, 99, { digits: 4, trim: true, size: 14, color: PAL.red, weight: 700, anchor: 'start', prefix: 'δ = ' });
@@ -181,13 +182,13 @@
       st.text('cmpB', 560, 220, '', { size: 14, color: PAL.teal, weight: 650 });
       st.text('cmpN', 560, 250, '', { size: 14, color: PAL.grey });
 
-      const T = R`\htmlClass{fx-delta}{\delta}=\htmlClass{fx-G}{G_t}-\htmlClass{fx-b}{b},\qquad h\leftarrow h+\htmlClass{fx-alpha}{\alpha}\,\htmlClass{fx-delta}{\delta}\,\nabla\log\pi,\qquad \htmlClass{fx-b}{b}\leftarrow \htmlClass{fx-b}{b}+\beta\,\htmlClass{fx-delta}{\delta}`;
+      const T = R`\htmlClass{fx-delta}{\delta}=\htmlClass{fx-G}{G_t}-\htmlClass{fx-b}{b_{\rm old}},\qquad h\leftarrow h+\htmlClass{fx-alpha}{\alpha}\,\htmlClass{fx-delta}{\delta}\,\nabla\log\pi,\qquad \htmlClass{fx-b}{b_{\rm new}}=\htmlClass{fx-b}{b_{\rm old}}+\beta\,\htmlClass{fx-delta}{\delta}`;
       const frames = [{ cap: '**回报动不动就是 99、101，怎样让更新只看“比平时好多少”？** 不减基线时，更新信号就是回报本身（99），一步就把 softmax 推进饱和区。' }];
       const epFrame = (k, extra) => {
         const e = hist[k], prev = hist[k - 1];
         return Object.assign({
-          set: { 'ep.num': k, 'bb.y': BASE - e.b * SC, 'bb.height': e.b * SC, 'bbn.num': e.b, 'dl.y2': BASE - prev.b * SC, 'dn.num': e.d, 'dn.y': BASE - (GB + prev.b) * SC / 2, 'pa.num': sm(e.h)[0] },
-          timing: { dl: [0, 0.35], dn: [0, 0.35], pa: [0.3, 0.7], bb: [0.6, 1], bbn: [0.6, 1] },
+          set: { 'ep.num': k, 'bb.y': BASE - prev.b * SC, 'bb.height': prev.b * SC, 'bbn.num': prev.b, 'bnext.num': e.b, 'dl.y2': BASE - prev.b * SC, 'dn.num': e.d, 'dn.y': BASE - (GB + prev.b) * SC / 2, 'pa.num': sm(e.h)[0] },
+          timing: { dl: [0, 0.35], dn: [0, 0.35], pa: [0.3, 0.7], bb: [0, 0.35], bbn: [0, 0.35], bnext: [0.6, 1] },
           dur: 1500, pulse: ['dn'], hl: ['delta', 'b']
         }, extra);
       };
@@ -197,7 +198,7 @@
       frames.push(Object.assign(epFrame(100, { cap: '一直到 E100：$b=' + f(hist[100].b, 5) + '$，几乎等于平时的回报 99，$\\delta$ 只剩 ' + f(hist[100].d, 4) + '——总是拿 99 的时候，“比平时好”几乎是 0，policy 不再被乱推。' }),
         { dur: 2200, timing: { dl: [0, 0.9], dn: [0, 0.9], bb: [0, 0.9], bbn: [0, 0.9], ep: [0, 0.9], pa: [0, 0.9] } }));
       frames.push({
-        set: { 'ep.num': 101, 'gA.op': 1, 'gA.y': BASE - GA * SC, 'gA.height': GA * SC, 'gAl.op': 1, 'dl.x1': XA + 40, 'dl.x2': XA + 40, 'dl.y1': BASE - GA * SC, 'dl.y2': BASE - hist[100].b * SC,
+        set: { 'ep.num': 101, 'bb.y': BASE - hist[100].b * SC, 'bb.height': hist[100].b * SC, 'bbn.num': hist[100].b, 'bnext.num': hist[100].b + be * d101, 'gA.op': 1, 'gA.y': BASE - GA * SC, 'gA.height': GA * SC, 'gAl.op': 1, 'dl.x1': XA + 40, 'dl.x2': XA + 40, 'dl.y1': BASE - GA * SC, 'dl.y2': BASE - hist[100].b * SC,
           'dtop.op': 0, 'dn.x': XA + 50, 'dn.num': d101, 'dn.y': BASE - GA * SC - 14, 'pa.num': pi101,
           'cmpT.text': 'E101 强制选 A（G = 101）之后：', 'cmpB.text': '有 baseline：δ = ' + f(d101, 3) + '，π(A) → ' + pi101.toExponential(2), 'cmpN.text': '没有 baseline：信号 101，π(A) → ' + f(piNB, 5) },
         timing: { gA: [0, 0.35], gAl: [0, 0.35], dl: [0.3, 0.6], dn: [0.3, 0.6], pa: [0.55, 0.9], cmpT: [0.6, 0.8], cmpB: [0.7, 0.9], cmpN: [0.8, 1] },

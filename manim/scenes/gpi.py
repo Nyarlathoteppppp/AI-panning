@@ -110,7 +110,8 @@ class GPIZigZag(Scene):
         y_name = cn("价值 V", size=21, color=DIM).next_to(y_axis.get_end(), RIGHT, buff=0.14)
         plane = VGroup(*grid, x_axis, y_axis, x_name, y_name)
         self.play(LaggedStart(*[Create(g) for g in grid], lag_ratio=0.025), run_time=1.0)
-        self.play(GrowArrow(x_axis), GrowArrow(y_axis), FadeIn(x_name), FadeIn(y_name), run_time=0.6)
+        schematic = cn("概念示意：高维 V 与 π；曲线、距离不代表实际数值", size=17, color=DIM).move_to(UP * 2.90)
+        self.play(GrowArrow(x_axis), GrowArrow(y_axis), FadeIn(x_name), FadeIn(y_name), FadeIn(schematic), run_time=0.6)
         say("平面上一个点 = 一个策略 π 加一个价值 V")
         self.wait(0.8)
 
@@ -139,8 +140,8 @@ class GPIZigZag(Scene):
             eval_formula.scale_to_fit_width(11.7)
         eval_template = eval_formula.copy()
         improve_formula = tex(
-            r"\pi'(s)", r"=", r"\arg\max_a", r"q_\pi(s,a)",
-            size=38, colors={i: OPEN_COL for i in range(4)},
+            r"\pi_{\mathrm{new}}(s)", r"=", r"\arg\max_a", r"\sum_{s'}p(s'\mid s,a)[r+\gamma V(s')]",
+            size=30, colors={i: OPEN_COL for i in range(4)},
         ).move_to(formula_center)
         improve_template = improve_formula.copy()
 
@@ -179,12 +180,12 @@ class GPIZigZag(Scene):
         assert abs(start_xy[1] - eval_y(start_xy[0])) > 0.5
         assert abs(start_xy[0] - improve_x(start_xy[1])) > 0.5
 
-        def staircase(xy, rounds, frac_eval=1.0, frac_improve=1.0):
+        def staircase(xy, rounds, frac_eval=1.0, frac_improve=1.0, improve_first=False):
             """Alternate evaluate (vertical, towards blue) and improve (horizontal, towards orange)."""
             x, y = xy
             pts, targets = [], []
             for k in range(rounds):
-                if k % 2 == 0:
+                if (k % 2 == 0) != improve_first:
                     full = (x, eval_y(x))
                     f = frac_eval
                 else:
@@ -257,7 +258,16 @@ class GPIZigZag(Scene):
         self.play(Circumscribe(VGroup(pi_dot, optimum_tag), color=G_COL, stroke_width=3), run_time=1.0)
         self.wait(1.5)
 
-        # ---------- VI: same directions, but each hop only goes part of the way ----------
+        # VI fully greedifies, then performs ONE Bellman evaluation sweep.
+        # Half the vertical distance is a visual convention, not the numerical VI rule.
+        eval_template = tex(
+            r"V_{k+1}(s)=\sum_{s'}p(s'\mid s,\pi_{k+1}(s))[r+\gamma V_k(s')]",
+            size=30, colors={0: V_COL},
+        ).move_to(formula_center)
+        if eval_template.width > 11.7:
+            eval_template.scale_to_fit_width(11.7)
+        formula_kind[0] = None
+        # ---------- VI: full greedy improvement, one evaluation sweep ----------
         self.play(
             *stage_anims(3, V_COL),
             *[FadeOut(arrow) for arrow in pi_arrows],
@@ -267,10 +277,10 @@ class GPIZigZag(Scene):
         vi_dot = Dot(vi_start, radius=0.105, color=G_COL).set_stroke(TEXT, width=2).set_z_index(5)
         vi_tag = tex(r"V_0", size=28, colors={0: G_COL}).next_to(vi_dot, LEFT, buff=0.16)
         self.play(FadeIn(vi_dot, scale=0.5), FadeIn(vi_tag, shift=UP * 0.1),
-                  *cap_anims("VI：每步只走一半，虚线是到线的全程"), run_time=0.6)
+                  *cap_anims("VI：先完整取贪心动作，再做一次 Bellman 更新"), run_time=0.6)
         self.wait(0.5)
 
-        vi_xy, vi_full = staircase(start_xy, 8, frac_eval=0.5, frac_improve=0.5)
+        vi_xy, vi_full = staircase(start_xy, 8, frac_eval=0.5, frac_improve=1.0, improve_first=True)
         vi_landings = [point(*p) for p in vi_xy]
 
         def plane_xy(frame_point):
@@ -278,17 +288,17 @@ class GPIZigZag(Scene):
 
         assert all(
             not np.isclose(y, eval_y(x))
-            for x, y in [plane_xy(p) for p in vi_landings[0::2]]
+            for x, y in [plane_xy(p) for p in vi_landings[1::2]]
         )
         assert all(
-            not np.isclose(y, improve_y(x))
-            for x, y in [plane_xy(p) for p in vi_landings[1::2]]
+            np.isclose(y, improve_y(x))
+            for x, y in [plane_xy(p) for p in vi_landings[0::2]]
         )
 
         vi_current = vi_start
         vi_trail = VGroup()
         for index, (landing, full) in enumerate(zip(vi_landings, vi_full)):
-            color = V_COL if index % 2 == 0 else OPEN_COL
+            color = OPEN_COL if index % 2 == 0 else V_COL
             ray = DashedLine(vi_current, point(*full), color=color, stroke_width=2,
                              dash_length=0.10, stroke_opacity=0.5)
             step = Line(vi_current, landing, color=color, stroke_width=3.5)
@@ -298,16 +308,16 @@ class GPIZigZag(Scene):
             self.play(FadeOut(ray), step.animate.set_stroke(opacity=0.45), run_time=0.15)
             vi_current = landing
             if index == 3:
-                self.play(*cap_anims("小步也一样：竖着评估、横着改进"), run_time=0.5)
+                self.play(*cap_anims("橙色到线；蓝色只更新一次，不评估到收敛"), run_time=0.5)
 
-        vi_tail_xy, _ = staircase(vi_xy[-1], 40, frac_eval=0.5, frac_improve=0.5)
+        vi_tail_xy, _ = staircase(vi_xy[-1], 40, frac_eval=0.5, frac_improve=1.0, improve_first=True)
         assert np.hypot(vi_tail_xy[-1][0] - x_star, vi_tail_xy[-1][1] - y_star) < 0.02
         vi_tail = VMobject(stroke_color=G_COL, stroke_width=2.5).set_points_as_corners(
             [vi_current] + [point(*p) for p in vi_tail_xy] + [optimum])
         self.play(Create(vi_tail), MoveAlongPath(vi_dot, vi_tail), run_time=1.3)
         vi_optimum_tag = tex(r"\to V^*,\ \pi^*", size=30, colors={0: G_COL}).next_to(
             vi_dot, DOWN + RIGHT, buff=0.10)
-        self.play(FadeIn(vi_optimum_tag, shift=UP * 0.1), *cap_anims("VI 走小步；重复以后也收敛"), run_time=0.6)
+        self.play(FadeIn(vi_optimum_tag, shift=UP * 0.1), *cap_anims("反复完整取 max、更新 V，直到收敛"), run_time=0.6)
         self.wait(1.2)
 
         # ---------- course fact: placed above the plane, clear of the intersection ----------
@@ -327,7 +337,7 @@ class GPIZigZag(Scene):
 
         # ---------- summary ----------
         self.play(
-            FadeOut(fact_panel), FadeOut(fact), FadeOut(plane),
+            FadeOut(fact_panel), FadeOut(fact), FadeOut(plane), FadeOut(schematic),
             FadeOut(eval_line), FadeOut(improve_line),
             FadeOut(eval_label), FadeOut(improve_label),
             FadeOut(vi_dot), FadeOut(vi_optimum_tag),
