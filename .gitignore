@@ -1,0 +1,18 @@
+# Only the new site and the Manim sources are published
+/*
+!/.gitignore
+!/README.md
+!/site/
+!/manim/
+
+# course material (slide text extracts, transcripts, tutor notes, PollEv history): kept local
+/site/reference/
+
+# Manim environment, third-party skills and render cache
+/manim/.venv/
+/manim/vendor/
+/manim/media/
+__pycache__/
+*.pyc
+
+.DS_Store

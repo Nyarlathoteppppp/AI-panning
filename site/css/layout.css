@@ -1,0 +1,96 @@
+/* Three-column shell: TOC | content | visualiser panel. */
+.topbar {
+  position: sticky; top: 0; z-index: 30; height: var(--topbar-h);
+  display: flex; align-items: center; gap: 14px; padding: 0 16px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: saturate(1.4) blur(10px); -webkit-backdrop-filter: saturate(1.4) blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+.brand { display: flex; align-items: center; gap: 8px; color: var(--text); font-weight: 650; white-space: nowrap; }
+.brand:hover { text-decoration: none; }
+.brand-mark { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: var(--text); color: var(--bg); font-size: .8rem; letter-spacing: .04em; }
+.crumb { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-2); font-size: .92rem; }
+.crumb-week { display: inline-block; font-size: .72rem; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 1px 8px; margin-right: 4px; }
+.crumb-sec { color: var(--muted); }
+.top-progress { display: flex; align-items: center; gap: 8px; }
+.progress-track { width: 110px; height: 6px; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
+.progress-fill { height: 100%; width: 0; background: var(--c-green); transition: width .3s; }
+.progress-text { font-size: .78rem; color: var(--muted); white-space: nowrap; }
+.top-actions { display: flex; align-items: center; gap: 4px; }
+.top-actions a { padding: 6px 10px; border-radius: 8px; color: var(--text-2); font-size: .9rem; white-space: nowrap; }
+.top-actions a:hover { background: var(--surface-2); text-decoration: none; }
+.icon-btn { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; height: 34px; min-width: 34px; cursor: pointer; font: inherit; font-size: .9rem; }
+.icon-btn.text { padding: 0 10px; }
+#toc-toggle { display: none; }
+.chapter-track { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; }
+.chapter-fill { height: 100%; width: 0; background: var(--accent); transition: width .25s; }
+
+.shell { display: grid; grid-template-columns: 272px minmax(0, 1fr); min-height: calc(100vh - var(--topbar-h)); }
+body.has-viz-panel .shell { grid-template-columns: 272px minmax(0, 1fr) minmax(420px, 36vw); }
+.toc {
+  position: sticky; top: var(--topbar-h); height: calc(100vh - var(--topbar-h)); overflow-y: auto;
+  border-right: 1px solid var(--border); background: var(--surface); padding: 14px 10px 40px;
+}
+main { min-width: 0; outline: none; }
+.main-inner { max-width: 820px; margin: 0 auto; padding: 28px 32px 80px; }
+.viz-panel { display: none; }
+body.has-viz-panel .viz-panel {
+  display: block; position: sticky; top: var(--topbar-h); height: calc(100vh - var(--topbar-h)); overflow-y: auto;
+  border-left: 1px solid var(--border); background: var(--surface); padding: 16px;
+}
+body.has-viz-panel .viz-wide-hint { display: block; }
+.viz-wide-hint { display: none; color: var(--muted); font-size: .88rem; }
+.scrim { display: none; }
+
+/* TOC */
+.toc-home { display: block; padding: 6px 10px; border-radius: 8px; color: var(--text); font-weight: 600; margin-bottom: 8px; }
+.toc-part { margin: 14px 0 6px; }
+.toc-part-head { display: flex; align-items: center; gap: 6px; padding: 0 8px 4px; font-size: .8rem; color: var(--muted); }
+.toc-week { font-weight: 700; color: var(--accent); }
+.toc-part-title { flex: 1; font-weight: 600; color: var(--text-2); }
+.toc-part-count { font-variant-numeric: tabular-nums; }
+.toc-chapters { list-style: none; margin: 0; padding: 0; }
+.toc-link { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 8px; color: var(--text-2); font-size: .9rem; line-height: 1.4; }
+.toc-link:hover { background: var(--surface-2); text-decoration: none; }
+.toc-link.active { background: var(--accent-soft); color: var(--text); font-weight: 600; }
+.toc-num { width: 18px; text-align: right; color: var(--muted); font-size: .78rem; font-variant-numeric: tabular-nums; }
+.toc-dot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--border-strong); flex: none; }
+.toc-dot.seen { border-color: var(--accent); }
+.toc-dot.done { background: var(--c-green); border-color: var(--c-green); }
+.toc-title { flex: 1; min-width: 0; }
+
+@media (max-width: 1100px) {
+  .progress-track { width: 70px; }
+  .top-actions a { padding: 6px 6px; }
+}
+@media (max-width: 900px) {
+  #toc-toggle { display: inline-block; }
+  .shell, body.has-viz-panel .shell { grid-template-columns: minmax(0, 1fr); }
+  .toc { position: fixed; left: 0; top: var(--topbar-h); bottom: 0; width: min(300px, 86vw); height: auto; z-index: 40;
+    transform: translateX(-102%); transition: transform .2s ease; box-shadow: var(--shadow); }
+  body.toc-open .toc { transform: none; }
+  body.toc-open .scrim { display: block; position: fixed; inset: var(--topbar-h) 0 0 0; background: rgba(0, 0, 0, .3); z-index: 35; }
+  .brand-text, .top-progress .progress-text { display: none; }
+  .main-inner { padding: 20px 16px 64px; }
+}
+@media (max-width: 640px) {
+  .top-actions a { display: none; }
+  .top-progress, .brand { display: none; }
+  .crumb-sec { display: none; }
+  .crumb { font-size: .82rem; }
+  h1 { font-size: 1.5rem; }
+}
+@media print {
+  .topbar, .toc, .viz-panel, .ch-secnav { display: none !important; }
+  .shell { display: block; }
+}
+
+/* sidebar search, results, footer */
+.toc-search-label { display: block; font-size: .78rem; color: var(--muted); margin: 2px 8px 6px; }
+.toc-search { width: 100%; font: inherit; font-size: .88rem; padding: 8px 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--bg); color: var(--text); margin-bottom: 10px; }
+.toc-results { display: grid; gap: 4px; }
+.toc-hit { display: block; padding: 7px 9px; border-radius: 8px; color: var(--text); font-size: .88rem; line-height: 1.45; }
+.toc-hit:hover { background: var(--surface-2); text-decoration: none; }
+.toc-hit small { display: block; color: var(--muted); font-size: .78rem; }
+.toc-foot { margin: 18px 8px 0; font-size: .74rem; color: var(--muted); line-height: 1.8; }
+.link-btn { display: block; margin-top: 6px; border: 0; background: none; padding: 0; color: var(--accent); font: inherit; cursor: pointer; }
