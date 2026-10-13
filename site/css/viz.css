@@ -105,7 +105,7 @@ input.viz-input { width: 70px; }
 .nn-node { fill: var(--surface); stroke: var(--border-strong); stroke-width: 1.5; }
 .nn-node.on { fill: color-mix(in srgb, var(--c-purple) 30%, var(--surface)); stroke: var(--c-purple); }
 .nn-edge { stroke: var(--border-strong); stroke-width: 1; opacity: .7; }
-.nn-text { fill: var(--text); font: 600 12px var(--font); text-anchor: middle; }
+.nn-text { fill: var(--text); font: 600 12px var(--font); }
 .buffer { display: flex; flex-wrap: wrap; gap: 4px; }
 .buffer span { font: 11px var(--mono); padding: 2px 6px; border-radius: 5px; background: var(--surface-3); }
 .buffer span.picked { background: color-mix(in srgb, var(--c-purple) 30%, var(--surface)); outline: 1.5px solid var(--c-purple); }

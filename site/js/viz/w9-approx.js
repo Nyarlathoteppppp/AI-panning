@@ -161,8 +161,8 @@
         draw();
       }
       function drawNet() {
-        const acts = forward(net, enc(sel)), W = 380, H = 190, cols = [2, 6, 6, 4];
-        const xs = [40, 140, 240, 330];
+        const acts = forward(net, enc(sel)), W = 450, H = 190, cols = [2, 6, 6, 4];
+        const xs = [70, 150, 240, 330];
         const pos = cols.map((n, c) => Array.from({ length: n }, (_, i) => [xs[c], 20 + (i + 0.5) * (H - 30) / n]));
         const show = (layer, i) => (layer === 1 || layer === 2 ? acts[layer][i * 2] : acts[layer][i]);
         const qOut = acts[3], best = qOut.indexOf(Math.max(...qOut));
@@ -189,7 +189,7 @@
         const err = Math.sqrt(g.nonTerminal.reduce((a, st) => a + A.reduce((b, ac, i) => b + (Q[st][ac] - Qstar[st][ac]) ** 2, 0), 0) / (g.nonTerminal.length * 4));
         clear(stats).put(readout([['训练步数', String(steps)], ['replay buffer 大小', buffer.length + ' / 500'], ['距下次同步 target network', P.target ? (P.sync - sinceSync) + ' 步' : '（未使用）'],
           ['所有 Q 与 q* 的 RMSE', fmt(err, 4)]]),
-          lastBatchTarget ? h('div', { html: texHTML('Y = r + \\gamma\\max_{a\'}Q_{' + (P.target ? '\\theta^-' : '\\theta') + '}(s\',a\') = ' + tf(lastBatchTarget.b.r, 0) + ' + 0.9\\times' + tf(lastBatchTarget.qn, 3) + ' = ' + tf(lastBatchTarget.y, 3), true) }) : null);
+          lastBatchTarget ? h('div', { html: texHTML(lastBatchTarget.b.done ? 'Y = r = ' + tf(lastBatchTarget.b.r, 0) + '\\quad(S\' \\text{ terminal})' : 'Y = r + \\gamma\\max_{a\'}Q_{' + (P.target ? '\\theta^-' : '\\theta') + '}(s\',a\') = ' + tf(lastBatchTarget.b.r, 0) + ' + 0.9\\times' + tf(lastBatchTarget.qn, 3) + ' = ' + tf(lastBatchTarget.y, 3), true) }) : null);
         clear(bufBox).put(h('div.buffer', buffer.slice(-60).map((b, i) => h('span' + (picked.includes(buffer.length - Math.min(60, buffer.length) + i) ? '.picked' : ''), 's' + b.s + ' ' + AN[A[b.a]] + ' ' + (b.r ? (b.r > 0 ? '+1' : '−1') : '0') + ' s' + b.next))));
       }
       const tog = (label, key) => { const box = h('input', { type: 'checkbox', checked: P[key] }); box.addEventListener('change', () => { P[key] = box.checked; reset(); }); return h('label', box, label); };

@@ -181,7 +181,7 @@
       const gridBox = h('div'), info = h('div'), chart = h('div');
       const view = gridView(gridBox, g, { onCell: st => { if (!g.isTerminal(st)) { sel = st; draw(); } } });
       const seg = segmented([{ value: 'q', label: '看 Q_t(s,a)（课件右图）' }, { value: 'v', label: '看本轮更新后的 V_t(s)' }], view_, v => { view_ = v; draw(); }, '视图');
-      const epsSlider = slider('停止阈值 ε', { min: -6, max: -1, step: 1, value: -3, format: v => '1e' + v, onInput: v => { eps = Math.pow(10, v); } });
+      const epsSlider = slider('停止阈值 ε', { min: -6, max: -1, step: 1, value: -3, format: v => '1e' + v, onInput: v => { eps = Math.pow(10, v); draw(); } });
       let lastQ = null, prevV = null;
       function reset() { V = dp.zeros(g); t = 0; deltas = []; policies = []; lastQ = null; prevV = null; draw(); }
       function iterate(n) {
