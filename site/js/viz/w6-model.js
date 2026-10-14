@@ -218,7 +218,7 @@
       const gridBox = h('div'), chart = h('div'), info = h('div');
       const view = gridView(gridBox, g, { onCell: st => { if (!g.isTerminal(st)) { start = st; samples = []; draw(); } } });
       const pols = () => ({ opt: optimal().policy, pi0: RL.examples.PI0, p1: RL.examples.POLICY1 }[which]);
-      const seg = segmented([{ value: 'opt', label: '最优 π*' }, { value: 'p1', label: 'MC 示例 policy' }, { value: 'pi0', label: '课件 π₀' }], which, v => { which = v; samples = []; draw(); }, 'policy');
+      const seg = segmented([{ value: 'opt', label: '最优 π*' }, { value: 'p1', label: '课件示例 policy（W7 用）' }, { value: 'pi0', label: '课件 π₀' }], which, v => { which = v; samples = []; draw(); }, 'policy');
       function sample(n) {
         const rng = makeRng(seed++), pol = pols();
         for (let i = 0; i < n; i++) {

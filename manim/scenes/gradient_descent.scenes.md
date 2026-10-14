@@ -14,7 +14,7 @@
 
 ### 1. Errors make the question concrete — 7 s
 - **Visual**: Fixed-frame 2D inset below the process strip; three target/prediction pairs and red vertical error segments.
-- **Math**: Build `δ = y − ŷ` beside the inset from the red segment, target dot, and prediction dot.
+- **Math**: Build `δ = y − ŷ` beside the inset from the red segment, target dot, and prediction dot; then `, ŷ = wᵀx` fades in (caption “预测值就是权重和特征的点积”) so the later `δ = y − wᵀx` is not a jump.
 - **Caption**: “红色竖线就是预测误差 δ”.
 
 ### 2. Errors become a surface — 7 s
@@ -41,7 +41,7 @@
 - **Visual**: Contour panel leaves; strip back on ③. A four-line derivation in the centre: `w ← w − α∇J`; `J = ½δ², δ = y − wᵀx`; `⇒ ∇J = −δ x` (∇J, −, δ, x fly in from the lines above); the two minus signs pulse red, then `w ← w + α δ x` is assembled from them (two minuses merge into +) and circumscribed.
 - **Then**: lines 1–3 fade, the update moves up and grows; takeaway sits 1.2+ units above the caption.
 - **Math**: `α`/w purple, `δ` red, `x` teal, `J`/∇J gold, y pink.
-- **Caption**: “只看一个样本：误差 δ 的平方” → “求导：梯度就是 −δ 乘 x” → “两个负号抵消：减号变加号” → “这就是 MC / TD 用的那一步，只是 target 不同”.
+- **Caption**: “只看一个样本；系数 1/2 让求导时的 2 约掉” → “求导：梯度就是 −δ 乘 x” → “两个负号抵消：减号变加号” → “这就是 MC / TD 用的那一步，只是 target 不同”.
 - **Takeaway**: “梯度指向上坡，沿反方向走一小步”.
 
 ## Layout regions

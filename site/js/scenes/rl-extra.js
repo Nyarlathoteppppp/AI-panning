@@ -48,7 +48,7 @@
       frames.push({
         set: util.merge(util.each(rs.length, j => ({ ['smp' + j + '.op']: 0.6, ['smp' + j + '.r']: 7 })), { 'gap.op': 0, 'step.op': 0, 'frac.op': 0 }),
         dur: 800, tex: R`\htmlClass{fx-Q}{Q_N}=\frac{r_1+\cdots+r_N}{N}=\frac{3}{5}=0.6`,
-        cap: '5 个样本后 $Q=0.6$，正好是 $(1+0+1+1+0)/5$。**步长 $\\tfrac1N$ 越来越小**，所以每个样本最后的权重都一样；只需要记住 $Q$ 和 $N$。如果奖励分布会变（非平稳），就把 $\\tfrac1N$ 换成固定的 $\\alpha$，让新样本权重更大。'
+        cap: '5 个样本后 $Q=0.6$，正好是 $(1+0+1+1+0)/5$。**为什么步长越来越小，权重却一样？** 第 1 个样本进来时权重是 1，之后每次更新旧估计都要乘 $(1-\\tfrac1N)$：第 2 次乘 $\\tfrac12$，第 3 次乘 $\\tfrac23$……到第 5 次正好剩 $\\tfrac15$。后来的样本步长小，但被稀释的次数也少，最后每个样本都是 $\\tfrac15$。只需要记住 $Q$ 和 $N$。如果奖励分布会变（非平稳），就把 $\\tfrac1N$ 换成固定的 $\\alpha$：每次都乘同一个 $(1-\\alpha)$，$k$ 次之前的样本权重是 $\\alpha(1-\\alpha)^k$，越旧越小（指数衰减），新样本权重更大；初始值的权重 $(1-\\alpha)^k$ 也会被慢慢冲掉。'
       });
       return frames;
     }
@@ -183,7 +183,7 @@
       st.text('cmpN', 560, 250, '', { size: 14, color: PAL.grey });
 
       const T = R`\htmlClass{fx-delta}{\delta}=\htmlClass{fx-G}{G_t}-\htmlClass{fx-b}{b_{\rm old}},\qquad h\leftarrow h+\htmlClass{fx-alpha}{\alpha}\,\htmlClass{fx-delta}{\delta}\,\nabla\log\pi,\qquad \htmlClass{fx-b}{b_{\rm new}}=\htmlClass{fx-b}{b_{\rm old}}+\beta\,\htmlClass{fx-delta}{\delta}`;
-      const frames = [{ cap: '**回报动不动就是 99、101，怎样让更新只看“比平时好多少”？** 不减基线时，更新信号就是回报本身（99），一步就把 softmax 推进饱和区。' }];
+      const frames = [{ cap: '**回报动不动就是 99、101，怎样让更新只看“比平时好多少”？** 不减基线（baseline：从回报里统一减掉的参照值）时，更新信号就是回报本身（99），一步就把 softmax 推进饱和区。' }];
       const epFrame = (k, extra) => {
         const e = hist[k], prev = hist[k - 1];
         return Object.assign({
@@ -203,9 +203,9 @@
           'cmpT.text': 'E101 强制选 A（G = 101）之后：', 'cmpB.text': '有 baseline：δ = ' + f(d101, 3) + '，π(A) → ' + pi101.toExponential(2), 'cmpN.text': '没有 baseline：信号 101，π(A) → ' + f(piNB, 5) },
         timing: { gA: [0, 0.35], gAl: [0, 0.35], dl: [0.3, 0.6], dn: [0.3, 0.6], pa: [0.55, 0.9], cmpT: [0.6, 0.8], cmpB: [0.7, 0.9], cmpN: [0.8, 1] },
         dur: 2200, pulse: ['dn'], hl: ['delta'],
-        cap: 'E101 强制选 A，$G=101$：$\\delta=101-' + f(hist[100].b, 3) + '=' + f(d101, 3) + '$，只是**比平时好一点**，于是只往 A 推一小步（$\\pi(A)$ 到 ' + pi101.toExponential(2) + '）。不减基线时信号是 101，$\\pi(A)$ 一下子翻到 ' + f(piNB, 5) + '。'
+        cap: 'E101 强制选 A，$G=101$：$\\delta=101-' + f(hist[100].b, 3) + '=' + f(d101, 3) + '$，只是**比平时好一点**，于是只往 A 推一小步（$\\pi(A)$ 到 ' + pi101.toExponential(2) + '）。不减基线时信号是 101，$\\pi(A)$ 一下子翻到 ' + f(piNB, 5) + '。看起来不减反而一步“学对”了，其实只是一条样本把 policy 从一个极端甩到另一个极端，下次选到 B 又会被甩回去。有 baseline 时一条样本只推一小步，要多次 A 都比平时好才会累积起来——这才是稳定的学习。'
       });
-      frames.push({ cap: '**baseline 把“绝对回报”换成“比平时好多少”**：信号变小、有正有负，更新就稳了（方差小）。它不改变梯度的期望，所以不会引入偏差。注意这个例子里 policy 在 E1 已经饱和，baseline 只能让后面的更新不再乱跳——这就是下一章 actor-critic 要继续改进的地方。' });
+      frames.push({ cap: '**baseline 把“绝对回报”换成“比平时好多少”**：信号变小、有正有负，更新就稳了（方差小）。它不改变梯度的期望，所以不会引入偏差。注意这个例子里 policy 在 E1 已经饱和，baseline 只能让后面的更新不再乱跳。（下一章的 actor-critic 改进的是另一件事：用 critic 的估计代替完整回报，每走一步就能更新；在这个一步就结束的例子里，从 0 开始学的 critic 第一步一样会饱和。）' });
       return frames;
     }
   });

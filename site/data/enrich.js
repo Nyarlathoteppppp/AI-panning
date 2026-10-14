@@ -9,7 +9,7 @@
   const fig = (src, caption) => ({ src, caption });
   const E = {
     c01: {
-      figure: [fig('04_mdp.jpg', '原课程教学图：Bandit 每次回到同一个选择点；MDP 中动作会改变下一次所处的局面。')],
+      figure: [fig('04_mdp.jpg', '原课程教学图：Bandit（多臂老虎机：只有一个状态、反复选动作拿奖励的问题）每次回到同一个选择点；MDP 中动作会改变下一次所处的局面。')],
       extra: { compare: R`
 :::note MDP 是“模型形式”，model-based / model-free 是“求解方式”
 MDP 描述世界怎样运行（$S,A,p,r,\gamma$）。是否**知道** $p,r$ 是另一个问题：知道就用规划（W6-2），不知道就从经验学习（W7 起）。两者不是同一层面的分类。
@@ -68,7 +68,7 @@ G = sum((gamma ** k) * r for k, r in enumerate(rewards))
 print("G_t =", G)   # 0.81
 ${'```'}` },
       morePitfalls: [
-        { wrong: '走了三步，最后的奖励就乘 $\\gamma^3$。', right: '第一笔未来奖励是 $R_{t+1}$，指数为 0。奖励 $(0,0,1)$ 的 return 是 $0+\\gamma\\cdot0+\\gamma^2\\cdot1$。但若只观察两步、再用 $V(S_{t+2})$ 补未来，这个价值要乘 $\\gamma^2$——它从两步之后开始计价。奖励下标与 bootstrap 时点不同，是 n-step 公式最常见的错位来源。' },
+        { wrong: '走了三步，最后的奖励就乘 $\\gamma^3$。', right: '第一笔未来奖励是 $R_{t+1}$，指数为 0。奖励 $(0,0,1)$ 的 return 是 $0+\\gamma\\cdot0+\\gamma^2\\cdot1$。但若只观察两步、再用 $V(S_{t+2})$ 补未来（后面会学：前两步用真实奖励，剩下的用估计 $V$ 代替），这个价值要乘 $\\gamma^2$——它从两步之后开始计价。奖励下标与 bootstrap 时点不同，是 n-step 公式最常见的错位来源。' },
         { wrong: '终止状态价值设成 1，再在前一步加 $\\gamma V(\\text{terminal})$。', right: '这会把同一次终点奖励重复计算。进入终点的转移已经支付了 $+1$，终止状态价值为 0。' }
       ]
     },
@@ -112,7 +112,7 @@ Bellman 方程描述的是正确价值必须满足的**自洽关系**；把当�
     c08: {
       figure: [fig('10_policy_evaluation.jpg', '原课程教学图：固定 policy，只更新它的价值。注意图中的数字只是示意（大致相当于动作不会打滑），不是课程 Gridworld（0.8 / 0.1 / 0.1 打滑、进入终点时给奖励）的结果；例如课程规则下第一轮评估，终点左边那格向右的价值是 0.8 而不是 0.9。课程的实际数字以本章数值例子和交互为准。')],
       extra: { math: R`
-**为什么反复 backup 会收敛（contraction 的直觉）**：两张价值表在任意状态上的最大差距，经过一次按概率的加权平均不会被放大，再乘 $\gamma$ 还会缩小到最多原来的 $\gamma$ 倍。所以每轮误差至少乘一次 $\gamma$，表会趋向唯一的 $v_\pi$。$\max_s|V_{k+1}(s)-V_k(s)|$ 足够小时即可停止——这个阈值描述的是“估计不再变化”，不代表 policy 已经最优。
+**为什么反复 backup 会收敛（contraction 的直觉）**：把 $V_k$ 和真实的 $v_\pi$ 同时做一次 backup：$V_k$ 变成 $V_{k+1}$，而 $v_\pi$ 满足 Bellman 方程，backup 后还是它自己。新值 = 奖励 + γ × 后继值的加权平均，两边的奖励相同、相减抵消；加权平均之差不超过各后继之差的最大值，再乘 γ，所以 $\max_s|V_{k+1}(s)-v_\pi(s)|\le\gamma\max_s|V_k(s)-v_\pi(s)|$。$k$ 轮后误差最多是初始误差的 $\gamma^k$ 倍，趋于 0。$\max_s|V_{k+1}(s)-V_k(s)|$ 足够小时即可停止——这个阈值描述的是“估计不再变化”，不代表 policy 已经最优。
 
 这里 $k$ 是**计算轮数**，不是环境交互的时刻 $t$。同步版本读 $V_k$、写 $V_{k+1}$；原地更新会立即使用本轮新值，数值传播顺序不同，但仍围绕同一个固定 policy。`,
         example: R`
@@ -343,7 +343,7 @@ $$G=0+0.9\times0+0.9^2\times1=0.81$$`,
       latex: R`\htmlClass{fx-vs}{v_*(s)}=\htmlClass{fx-maxpi}{\max_\pi v_\pi(s)}=\htmlClass{fx-maxa}{\max_a q_*(s,a)}`,
       parts: [
         { key: 'vs', label: '最优状态价值', color: 'blue', text: '从 $s$ 出发，按最好的方式行动，期望能拿到的最多回报。Gridworld 中 $v_*(s_1)=0.5452$。' },
-        { key: 'maxpi', label: '定义：在所有 policy 里取最好', color: 'purple', text: '这是**定义**：把每个 policy 在 $s$ 的价值都算出来取最大。直接这样算要枚举 $4^9$ 个 policy，不现实。' },
+        { key: 'maxpi', label: '定义：在所有 policy 里取最好', color: 'purple', text: '这是**定义**：把每个 policy 在 $s$ 的价值都算出来取最大。直接这样算要枚举 $4^9$ 个 policy（9 个非终止状态，每个有 4 种选择），不现实。' },
         { key: 'maxa', label: '等价写法：只比较第一步的动作', color: 'orange', text: '$q_*(s,a)$ 是“第一步做 $a$，之后都按最优走”。所以只要比较第一步的几个动作就够了——这就是第 7 章 Bellman optimality 方程和第 10 章 VI 的出发点。' }
       ]
     }],

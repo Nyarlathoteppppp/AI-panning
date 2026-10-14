@@ -166,15 +166,20 @@ class GradientDescent(ThreeDScene):
                   LaggedStart(*[GrowFromCenter(d) for d in prediction_dots], lag_ratio=0.15),
                   LaggedStart(*[Create(e) for e in errors], lag_ratio=0.15),
                   FadeIn(keys), run_time=1.1)
-        delta_formula = tex(r"\delta", r"=", r"y", r"-", r"\hat y",
-                            size=34, colors={0: NEG_COL, 2: TARGET_COL, 4: V_COL})
+        delta_formula = tex(r"\delta", r"=", r"y", r"-", r"\hat y", r",\quad", r"\hat y", r"=",
+                            r"\mathbf w^{\top}\mathbf x",
+                            size=34, colors={0: NEG_COL, 2: TARGET_COL, 4: V_COL, 6: V_COL, 8: ALPHA_COL})
         delta_formula.move_to(LEFT * 4.45 + DOWN * 1.28)
+        assert delta_formula.get_left()[0] > -config.frame_width / 2 + 0.2
         self.add_fixed_in_frame_mobjects(delta_formula)
+        self.remove(delta_formula)  # parts appear one by one below
         self.play(TransformFromCopy(errors[0], delta_formula[0]),
                   TransformFromCopy(target_dots[0], delta_formula[2]),
                   TransformFromCopy(prediction_dots[0], delta_formula[4]),
                   Write(delta_formula[1]), Write(delta_formula[3]), run_time=0.9)
         cap = fixed_caption("红色竖线就是预测误差 δ", old=cap)
+        self.play(FadeIn(delta_formula[5:], shift=RIGHT * 0.1), run_time=0.6)
+        cap = fixed_caption("预测值就是权重和特征的点积", old=cap)
         self.wait(0.9)
         self.play(FadeOut(inset), FadeOut(delta_formula), run_time=0.45)
 
@@ -424,7 +429,7 @@ class GradientDescent(ThreeDScene):
         self.add_fixed_in_frame_mobjects(line1, line2, line3, line4)
         self.remove(line2, line3, line4)
         self.play(FadeIn(line1, shift=UP * 0.1), run_time=0.6)
-        cap = fixed_caption("只看一个样本：误差 δ 的平方", old=cap)
+        cap = fixed_caption("只看一个样本；系数 1/2 让求导时的 2 约掉", old=cap)
         self.play(FadeIn(line2, shift=UP * 0.1), run_time=0.7)
         self.wait(0.6)
         self.play(FadeIn(line3[0]), TransformFromCopy(line1[5], line3[1]), FadeIn(line3[2]),

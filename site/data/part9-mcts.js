@@ -17,7 +17,7 @@
     latex: R`\htmlClass{fx-g}{G}=\sum_{k=0}^{\htmlClass{fx-k}{K-1}}\htmlClass{fx-d}{\gamma^{k}}\,\htmlClass{fx-r}{r_{k}},\qquad a_k\sim\htmlClass{fx-pi}{\pi_{\text{sim}}}(\cdot\mid s_k)`,
     parts: [
       { key: 'pi', label: 'rollout policy π_sim', color: 'purple', text: '课件：通常是简单的 policy，例如**均匀随机**或简单启发式。重点是计算便宜、能快速把这一局走完；不要求最优，但用好一点的启发式可以让估计更准。本站交互用均匀随机。' },
-      { key: 'r', label: '第 k 步的奖励', color: 'gray', text: '从新节点出发第 $k$ 步拿到的奖励。课程 Gridworld 中只有进入 $+1$ 或 $-1$ 格时 $r\neq0$。' },
+      { key: 'r', label: '第 k 步的奖励', color: 'gray', text: '从新节点出发第 $k$ 步拿到的奖励。课程 Gridworld 中只有进入 $+1$ 或 $-1$ 格时 $r\\neq0$。' },
       { key: 'd', label: '折扣 γ^k', color: 'teal', text: '越晚拿到的奖励乘的 γ 越多。$\\gamma=0.9$：第 0 步进 $+1$ 得 1，第 2 步进 $+1$ 只得 $0.81$。' },
       { key: 'k', label: 'K：rollout 实际走的步数', color: 'orange', text: '走到终止状态就停；否则最多走 horizon 步（课件例子是 60）。走满 horizon 还没终止，后面的奖励就不算了。课件写的 “$r\\leftarrow R+\\gamma\\times r$” 记号不够明确：如果按时间顺序把“新奖励 + γ × 已有累计”算下去，折扣会倒过来（奖励 0, 0, 1 会得到 1 而不是 0.81）。正确做法是前向 $G\\leftarrow G+\\gamma^k r_k$，或走完后从后往前 $G\\leftarrow r_k+\\gamma G$。' },
       { key: 'g', label: 'G：新节点的一个价值样本', color: 'green', text: '这一个数就是 simulation 的全部产出：对“新节点之后还能拿多少”的一次有噪声的估计。rollout 经过的状态**不加入树**。' }
@@ -71,7 +71,7 @@
       { key: 'q', label: 'search value', color: 'blue', text: '树中对这一步的平均评估，和 UCT 里的 $Q$ 一样。' },
       { key: 'c', label: 'c_puct', color: 'purple', text: '探索强度。' },
       { key: 'p', label: 'learned prior P(s,b)', color: 'green', text: '网络认为“这一步值得看”的概率 $p_\\theta(b\\mid s)$。prior 高的动作在搜索初期得到更多关注。' },
-      { key: 'num', label: '访问次数项', color: 'orange', text: '分母 $1+N(s,b)$：同一个动作被选得越多，加分越少。和 UCT 不同，$N(s,b)=0$ 时这一项是有限值 $\\sqrt{\\sum_u N}$，不是 $+\\infty$——prior 很低的动作可能很久都不会被试。' }
+      { key: 'num', label: '访问次数项', color: 'orange', text: '分母 $1+N(s,b)$：同一个动作被选得越多，加分越少。和 UCT 不同，$N(s,b)=0$ 时这一项是有限值 $\\sqrt{\\sum_u N}$，不是 $+\\infty$——prior 很低的动作可能很久都不会被试。没访问过的动作还没有样本平均，$Q$ 记作 0（AlphaGo Zero 把新边初始化为 $N=0,Q=0,P=p_\\theta$），所以它的分数就是 $c_{\\text{puct}}P\\sqrt{\\sum_uN}$。' }
     ]
   };
   const SELFPI = {
@@ -202,6 +202,7 @@ Generative model 只能一次次调用：第 1 次返回 $(s_5,0)$，第 2 次 $
 | 适合 | 状态少、有充足的离线时间 | 状态极多、有 simulator、每步有计算预算 | 没有模型，只能与环境交互 |
 `,
     pitfalls: [
+      { wrong: 'Q-learning 训练时边走边更新，所以算在线 RL。', right: '看 policy 被**真正使用**时是否还在变。训练完再部署、部署后 policy 冻结，属于离线；执行真实任务的同时还在更新，才是在线 RL。在线/离线也和 on-policy/off-policy 无关，后者问的是“被学习的 policy 和产生数据的 policy 是不是同一个”。' },
       { wrong: '在线方法就是 model-free 的。', right: '在线**规划**（例如 MCTS）恰恰需要模型或 simulator 来预测后果；在线 RL 可以不用模型。在线 / 离线说的是“何时计算”，model-based / model-free 说的是“能不能访问模型”，这是两个独立的维度。' },
       { wrong: 'Generative model 就是真实环境。', right: '两者都只给样本，但 simulator 可以从任意状态开始、同一个 $(s,a)$ 反复试，试错没有后果；真实环境只能从当前状态往前走，不能撤销。' },
       { wrong: '在线规划每一步都从零开始算，所以一定很浪费。', right: '课件强调高效的在线方法要**复用**之前的结果：MCTS 执行动作后保留对应子树，下次搜索接着用（课件 Gridworld 例子中，根节点的访问次数因此超过 200）。' },
@@ -248,10 +249,10 @@ MCTS 结合了三样东西：
 
 **四步（每次迭代都做一遍）**
 
-1. **Selection 选择**（p.10）：从根出发，按 **tree policy** $\pi_{\text{tree}}$ 反复选子节点往下走，直到到达一个还要往下长的节点。
+1. **Selection 选择**（p.10）：从根出发，在每个节点按 **tree policy** $\pi_{\text{tree}}$ 选一个**动作**，由 simulator 抽一个结果，走到对应的子节点；反复往下，直到到达一个还要往下长的节点。
 2. **Expansion 扩展**（p.11）：在这个节点按 $\pi_{\text{tree}}$ 选一个动作 $a$，用 simulator 得到结果 $(s',r)$，为 $s'$ 加一个**新子节点**。
 3. **Simulation 模拟 / rollout**（p.13）：从新节点出发，用 **rollout policy** $\pi_{\text{sim}}$（也叫 default policy；通常是随机或简单启发式）一直走，直到终止状态或用完模拟预算，累计折扣奖励。
-4. **Backpropagation 回传**（p.14）：从新节点开始往根走，沿途更新每个节点的价值和访问次数，直到根。（这里只是计数和算平均，不求导，和神经网络训练里的“反向传播”不是一回事。）
+4. **Backpropagation 回传**（p.14）：从新节点开始往根走，沿途更新每条边的 $Q(s,a)$、$N(s,a)$ 和每个节点的 $N(s)$，直到根。（这里只是计数和算平均，不求导，和神经网络训练里的“反向传播”不是一回事。）
 
 **Anytime**：搜索可以在任何时候停下，返回当前最好的动作；更多计算可以改进估计（课件：“can improve”），但不保证每多一次迭代都更好。
 `,
@@ -262,9 +263,9 @@ MCTS 结合了三样东西：
 
 MCTS 的树记住了之前的模拟：靠近根的部分被访问很多次，在那里 agent 按 tree policy **有选择地**走（偏向好的动作），只在树的边缘之外才随机走。树越长越深，“随机走”的部分越靠后、影响越小，根附近的估计也就越接近好的走法。
 
-**为什么不把整棵树展开（Expectimax）？**
+**为什么不把整棵树展开（Expectimax：把每个动作的所有可能结果都展开、按概率求期望的完整搜索树）？**
 
-完全展开的树按指数增长：课程 Gridworld 中，从 $s_1$ 展开 1 层有 10 个叶子，2 层 100 个，3 层 1018 个。MCTS 每次迭代只加一个节点，而且多加在有希望的分支上，树是**不对称**的。
+完全展开的树按指数增长：课程 Gridworld 中，从 $s_1$ 展开 1 层有 10 个叶子（Up、Right 各有 3 个不同结果，Down、Left 各有 2 个，因为撞墙的分支会落回同一格），2 层 100 个，3 层 1018 个。MCTS 每次迭代只加一个节点，而且多加在有希望的分支上，树是**不对称**的。
 `,
     intuition: R`
 **树是“记忆”，rollout 是“速写”**
@@ -284,7 +285,7 @@ $$G=r_0+\gamma r_1+\gamma^2r_2+\dots=\sum_{k=0}^{K-1}\gamma^k r_k,\qquad K\le H.
 课件把这一步写成 “$s\leftarrow s'$ 且 $r\leftarrow R+\gamma\times r$”，记号不够明确：按时间顺序照字面算会把折扣倒过来（奖励 0, 0, 1 得到 1，正确值是 0.81）。应当前向累加 $G\leftarrow G+\gamma^k r_k$，或者走完后从后往前算 $G\leftarrow r_k+\gamma G$，两者结果相同。如果新节点本身是终止状态，就不需要 rollout，$G=0$。
 
 **Backpropagation（p.14）**：从新节点往根逐条边处理。设 $R$ 一开始等于 $G$，对路径上从下往上的每条边 $(s,a)$（它在 selection / expansion 时得到的奖励是 $r$）：
-$$R\leftarrow r+\gamma R,\qquad Q(s,a)\leftarrow Q(s,a)+\frac{1}{N(s,a)+1}\big[R-Q(s,a)\big],\qquad N(s,a)\leftarrow N(s,a)+1.$$
+$$\begin{gathered}R\leftarrow r+\gamma R\\Q(s,a)\leftarrow Q(s,a)+\frac{1}{N(s,a)+1}\big[R-Q(s,a)\big],\qquad N(s,a)\leftarrow N(s,a)+1.\end{gathered}$$
 第一式课件没有写出，但必须有：边 $(s,a)$ 的回报 = 这条边的奖励 + γ × 下面那一段的回报。
 
 为什么第二式是平均：若 $Q$ 是前 $N$ 个样本的平均，则 $\frac{NQ+R}{N+1}=Q+\frac{R-Q}{N+1}$ 正好是 $N+1$ 个样本的平均。
@@ -306,7 +307,7 @@ $$R\leftarrow r+\gamma R,\qquad Q(s,a)\leftarrow Q(s,a)+\frac{1}{N(s,a)+1}\big[R
 | 3 | 同上 | 试 Up：撞边界留在 $s_{10}$，$r=0$；新建一个**深度 1** 的 $s_{10}$ 节点 | $s_{10}\xrightarrow{\text{R}}s_{11}$（$+1$）：$G=1$ | $R=0+0.9\times1=0.9$；$Q(s_{10},\text{U})=0.9$ |
 | 4 | 同上 | 试 Down：到 $s_6$，$r=0$ | $s_6\xrightarrow{\text{R}}s_7$（$-1$）：$G=-1$ | $R=-0.9$；$Q(s_{10},\text{D})=-0.9$ |
 
-此时根的 4 个动作都试过一次，$N(s_{10})=4$。**迭代 5** 开始用 UCB 选：$\ln4=1.3863$，每个动作的 bonus 都是 $\sqrt2\sqrt{1.3863/1}=1.6651$。
+此时根的 4 个动作都试过一次，$N(s_{10})=4$。selection 用 UCB 打分：$\text{UCB}(s,a)=Q(s,a)+c\sqrt{\ln N(s)/N(s,a)}$。它和 bandit 的 UCB 是同一个式子，只是把“总共拉了几次杆”$t$ 换成这个节点的访问次数 $N(s)$（新树的根 $N(s)=\sum_aN(s,a)$），分数最高的动作被选中。**迭代 5** 开始用 UCB 选：$\ln4=1.3863$，每个动作的 bonus 都是 $\sqrt2\sqrt{1.3863/1}=1.6651$。
 
 | 动作 | $Q$ | $N$ | UCB |
 |---|---|---|---|
@@ -332,7 +333,7 @@ $$R\leftarrow r+\gamma R,\qquad Q(s,a)\leftarrow Q(s,a)+\frac{1}{N(s,a)+1}\big[R
 1. 默认根是 $s_1$。点“下一阶段”，按 ① → ④ 一步步看一次迭代：前 4 次迭代根还有没试过的动作，selection 为空，直接扩展。
 2. 第 5 次起，selection 表格列出每层四个动作的 $Q$、$N$、bonus 和 UCB，高亮的是被选中的动作。
 3. ③ 列出 rollout 的每一步和 $\gamma^k r$；④ 列出从下往上每条边的 $R=r+\gamma R$ 和增量平均。
-4. 点“再跑 200 次”后看树的前两层：$N$ 集中在少数动作上，根下面同一动作挂着多个后继（打滑）。点格子可以换根，例如 $s_{10}$。` },
+4. 点“再跑 200 次”后看树的前两层：$N$ 集中在少数动作上，根下面同一动作挂着多个后继（打滑）。点格子可以换根，例如 $s_{10}$。没试过的动作随机挑一个先试；例题里的顺序和打滑结果只是其中一种可能，所以换根到 $s_{10}$ 后数字不一定和例题相同，但每一步的算法一样。` },
     compare: R`
 | | 树内（selection） | 树的边缘（expansion） | 树外（simulation） |
 |---|---|---|---|
@@ -369,7 +370,7 @@ $$R\leftarrow r+\gamma R,\qquad Q(s,a)\leftarrow Q(s,a)+\frac{1}{N(s,a)+1}\big[R
 **记号（W11 p.12）**
 - $|A|=n$：状态 $s$ 中可选动作的个数；
 - $Q(s,a)$：在 $s$ 选 $a$ 的估计价值；$a^*=\arg\max_aQ(s,a)$：$s$ 中的贪心动作；
-- $N(s)$：状态 $s$ 被访问的次数；$N(s,a)$：在 $s$ 选过 $a$ 的次数。
+- $N(s)$：这个节点被访问的次数（同一状态在树里可能有几个节点，各记各的）；$N(s,a)$：在这个节点选过 $a$ 的次数。
 
 **ε-greedy**
 $$\pi_{\text{tree}}(a\mid s)=\begin{cases}1-\varepsilon+\dfrac{\varepsilon}{n}, & a=a^*\ (\text{greedy}),\\[4pt] \dfrac{\varepsilon}{n}, & a\neq a^*\ (\text{non-greedy}).\end{cases}$$
@@ -405,7 +406,7 @@ UCB1：$c=\sqrt2$。使用 UCB1 作为 tree policy 的 MCTS 称为 **UCT**（Upp
     math: R`
 **$N(s,a)=0$ 怎么办**：分母为 0，按惯例把 UCB 记作 $+\infty$，所以每个动作都会先被试一次——这正是 expansion 先试未试动作的原因。
 
-**$c$ 的两个极端**：$c=0$ 时退化为 greedy；$c$ 很大时 $Q$ 几乎不起作用，访问次数趋于平均分配。$c$ 的合适大小和回报的范围有关（课程 Gridworld 的回报在 $[-1,1]$ 内）。
+**$c$ 的两个极端**：$c=0$ 时退化为 greedy；$c$ 很大时 $Q$ 几乎不起作用，访问次数趋于平均分配。$c$ 的合适大小和回报的范围有关（课程 Gridworld 的回报在 $[-1,1]$ 内）：bonus 和 $Q$ 直接相加，单位必须一致。回报全部乘 10，$Q$ 之间的差距放大 10 倍，bonus 却不变，探索就相对变弱。UCB1 的 $\sqrt2$ 是按回报在 $[0,1]$ 内推出来的，回报范围变了，$c$ 也要跟着缩放。
 
 **和 W7 bandit 的 UCB 对照**：bandit 中是 $Q_t(a)+c\sqrt{\ln t/N(a)}$，$t$ 是总共拉了几次杆。MCTS 中每个节点各自是一个 bandit，$t$ 换成这个节点的访问次数 $N(s)$。
 
@@ -439,7 +440,9 @@ $N(s_1)=64+52+36+48=200$，$\ln200=5.2983$。
 1. 默认是决策 1 的根：核对表中 0.3819 / 0.3784 / 0.3845 / 0.3794，高亮行（UCB 最大）是 Right，而 $Q$ 最大的是 Up。
 2. 点 Right 的“+1 次访问”：它的 bonus 立刻变小，高亮移到另一个动作——这就是 UCB 的轮换。
 3. 把 $c$ 拖到 0：变成 greedy，高亮回到 Up。把 $c$ 拖大：$Q$ 的影响变小。
-4. 切到“决策 6”（根 $s_{10}$，Right 已被访问 266 次）：看 Right 的 bonus 有多小，以及 ε-greedy / softmax 的概率怎么变。` },
+4. 切到“决策 6”（根 $s_{10}$，Right 已被访问 266 次）：看 Right 的 bonus 有多小，以及 ε-greedy / softmax 的概率怎么变。
+
+小注：决策 2–6 的根来自复用的子树，按上一章的约定 $N(s)$ 应为 $1+\sum_aN(s,a)$；计算器为了和图上的数字对照用 $\sum_aN(s,a)$，$\ln$ 只差约 0.003–0.005，不影响选择。` },
     compare: R`
 | | ε-greedy | Softmax | UCB / UCT |
 |---|---|---|---|
@@ -476,7 +479,7 @@ $N(s_1)=64+52+36+48=200$，$\ln200=5.2983$。
 - 课程 4×3 Gridworld：坐标 $(x,y)$ 原点在左下；$(1,1)$ 是墙；$s_{11}=(3,2)$ 是 $+1$ 终止格，$s_7=(3,1)$ 是 $-1$ 终止格；状态从左下 $s_1$ 开始按行编号。动作按意图移动的概率 0.8，向左、向右打滑各 0.1；撞墙或出界留在原地；只有进入终止格时有奖励。
 - MCTS：$\gamma=0.9$，UCB 的 $c=\sqrt2$，每次决策做 200 次迭代，rollout horizon 60（最多模拟 60 步）。
 
-**怎么读图**：每格画成四个三角形，上 / 右 / 下 / 左分别是 Up / Right / Down / Left，写着 $Q(s,a)$ 和 $N(s,a)$。蓝色圆圈 R 是 agent 所在格（根），根的数字是粗体；黄色框是要执行的动作（根上 $Q$ 最大的）；“$Q=—,N=0$”表示树里没有这条统计；从决策 4 起出现的灰色数字是旧树留下、没有被复用的统计。
+**怎么读图**：每格画成四个三角形，上 / 右 / 下 / 左分别是 Up / Right / Down / Left，写着 $Q(s,a)$ 和 $N(s,a)$。蓝色圆圈 R 是 agent 所在格（根），根的数字是粗体；黄色框是要执行的动作（根上 $Q$ 最大的）；“$Q=—,N=0$”表示树里没有这条统计；从决策 4 起出现的灰色数字是旧树留下、没有被复用的统计。非根格子：同一状态在树里可能对应好几个节点，图上把它们合并成一个数（$N$ 相加，$Q$ 按 $N$ 加权平均；课件没说明它的图怎样合并，本站按这种方式显示）。根格子只对应一个节点，数字就是根节点自己的统计。
 
 **6 次决策的根节点**（$Q$ / $N$；最后一列是 Σ N(s0,a)）
 
@@ -608,19 +611,19 @@ MCTS 的估计都偏低，Down 甚至是负的（Down 按意图会走到 $s_6$�
 | 最后执行的动作 | 价值最高的动作，或访问次数最多的动作 | |
 
 **来自问题设定的变体**（课件只列名称）
-- **双人零和 MCTS**：对当前走棋方用 $Q(s,a)$，对对手用 $-Q(s,a)$——我的收益就是对手的损失。回传到另一方的节点时要换成那一方的视角（取负）；在严格轮流走棋的棋类中，相邻两层决策节点属于不同的一方，所以通常每层取一次负。
+- **双人零和 MCTS**：我的收益就是对手的损失。实现时**选一种**约定：(a) 所有节点都存根方视角的 $Q$，轮到对手的节点选 $\arg\max_a\big[-Q(s,a)+c\sqrt{\ln N(s)/N(s,a)}\big]$，探索加分照样是**加**（不是对 $Q+\text{bonus}$ 取 argmin）；(b) 每个节点存“该节点走棋方”视角的 $Q$，回传时每上一层把 $R$ 取一次负（negamax），这样每个节点都直接用普通 UCB。两种做法等价，但不能同时用（否则负负得正）。
 - **POMDP**（状态部分可观测）：Partially Observable Monte Carlo Planning（POMCP）。
-- **不完全信息博弈**：Information Set MCTS（ISMCTS）。
+- **不完全信息博弈**：Information Set MCTS（ISMCTS）。Imperfect information（不完全信息）指有些信息对手知道而我看不到，例如扑克的底牌；围棋、国际象棋双方都看得到全部局面，是完全信息。POMDP 说的是单个 agent 看不全状态；不完全信息博弈说的是几个玩家各自看到不同的信息。
 - **大动作空间**：Progressive Widening（逐步放宽每个节点考虑的动作数）。
 
 **Expectimax tree（p.24）**：两种节点交替出现。
 - **Decision node**：agent 选择动作 $a$。它的价值是子节点价值的**最大值**。
 - **Chance node**：模型按转移概率给出 $s'$ 和 $r$。它的价值是子节点价值的**期望**。
 
-课件的示意图：根 $s_0$ 有动作 a、b，各连到一个黑色 chance node；a 的 chance node 以概率 $P_a(t\mid s_0)$、$P_a(t'\mid s_0)$ 分到 $t$、$t'$；b 的分到 $u$、$u'$；$t$ 下还有动作 c，$u$ 下有动作 d、e，各自再接 chance node……
+用本章的例子画出来：$s_{10}$（decision node）→ 选动作 Right（chance node）→ 按概率分到 $s_{11}$（0.8）、$s_{10}$（0.1，左滑撞边界）、$s_6$（0.1，右滑）；每个结果又是一个 decision node，在那里再选动作、再接 chance node……层层交替。
 `,
     why: R`
-**MCTS 的 $Q$ 是怎么来的？** 对采样得到的回报取平均（p.24）。它有两层随机性：转移结果是采样的，树外的 rollout 也是随机的。
+**MCTS 的 $Q$ 是怎么来的？** 对采样得到的回报取平均（p.24）。同一个 $(s,a)$ 被试很多次后，各后继出现的频率接近 $P(s'\mid s,a)$，所以样本平均是在用频率代替概率，近似 chance node 的加权求和；Expectimax 直接用真实概率，省掉了这部分噪声。它有两层随机性：转移结果是采样的，树外的 rollout 也是随机的。
 
 **模型已知时能不能做得更好？** 能。转移概率已知，chance node 就不必靠采样估计，直接按概率加权求和，得到精确的期望——这就是 Expectimax tree。
 
@@ -636,7 +639,7 @@ MCTS 的估计都偏低，Down 甚至是负的（Down 按意图会走到 $s_6$�
 $$V(s)=\max_a\sum_{s',r}P(s',r\mid s,a)\big(r+\gamma V(s')\big).$$
 Expectimax 只是把它画成从当前状态展开的一棵树，并且只算**从当前状态能到达**的部分。限定深度 $d$、深度用完的节点按 0 计时，结果和 value iteration 第 $d$ 轮得到的 $V_d(s)$ 完全相同。
 
-**和双人博弈的 minimax 对比**：minimax 中对手的节点取 min；Expectimax 中“对手”是随机的自然，所以取期望。
+**和双人博弈的 minimax 对比**：minimax（极小化极大）是两人轮流的搜索：我方节点取 max，对手节点取 min（对手要让我的价值最小）；Expectimax 中“对手”是随机的自然，所以取期望。
 `,
     math: R`
 **Expectimax 的四步（W11 p.25）**
@@ -647,7 +650,7 @@ Expectimax 只是把它画成从当前状态展开的一棵树，并且只算**�
   - chance node：$\displaystyle Q(s,a)=\sum_{s',r}P(s',r\mid s,a)\cdot\big(r+\gamma\max_{a'}Q(s',a')\big)$；
   - decision node：$\displaystyle V(s)=\max_aQ(s,a)$。
 
-终止状态的后续价值按定义为 0（进入它的奖励已经算在 $r$ 里）。
+终止状态的后续价值按定义为 0（进入它的奖励已经算在 $r$ 里）。这个回传式默认 chance node 的全部结果都已加入树；新加入、还没有动作统计的子节点，用它的 rollout 回报 $G$（或价值函数估计）充当 $\max_{a'}Q(s',a')$。selection 经过 chance node 时，按 $P$ 抽一个后继往下走。只采样加入部分结果时，求和不完整，结果仍是近似。
 
 上面四步是“用 Expectimax 方式回传的增量搜索”，和 MCTS 一样一次长一点。本站交互用的是另一种更直接的做法：**固定深度、一次完全展开**，枚举所有动作和结果，再从下往上算，不做 UCB selection，也不做随机 rollout。
 
@@ -676,14 +679,14 @@ $V_1(s_{10})=\max=0.8$。同理可算 $V_1(s_6)=0$（$s_6=(2,1)$ 选 Left 不会
 | 留在 $s_{10}$ | 0.1 | 0 | 0.8 | 0.72 | 0.072 |
 | 到 $s_6$ | 0.1 | 0 | 0 | 0 | 0 |
 
-$Q_2(s_{10},\text{Right})=0.872$。其他动作：Up $0.676$，Down $0.1$，Left $0.072$。所以 $V_2(s_{10})=0.872$——正是 W6 value iteration 在 $s_{10}$ 第二次 backup 的结果。
+$Q_2(s_{10},\text{Right})=0.872$。其他动作（还要用到 $V_1(s_9)=0$：$s_9$ 一步到不了任何终止格）：Up $0.8\times0.9\times0.8+0.1\times0.9\times0+0.1\times1=0.676$；Down $0.8\times0.9\times0+0.1\times1+0.1\times0.9\times0=0.1$；Left $0.8\times0.9\times0+0.1\times0.9\times0+0.1\times0.9\times0.8=0.072$。所以 $V_2(s_{10})=0.872$——正是 W6 value iteration 在 $s_{10}$ 第二次 backup 的结果。
 `,
     viz: { id: 'expectimax', guide: R`
 **怎么用**：
 
 1. 默认 $s_{10}$、深度 2：四个动作的 $Q_2$ 中 Right 的 0.872 最大；下面展开 (s10, Right) 的 chance node，逐项核对上面的表。
 2. 改成深度 1：Right 变成 0.8。点不同动作的“展开”看各自的结果分布。
-3. 点 $s_1$，把深度从 1 调到 5：看叶子数量怎样增长，以及 $V_d$ 怎样逼近 0.5452。
+3. 点 $s_1$，把深度从 1 调到 5：叶子数 10 → 100 → 1018 → … 快速增长。$V_d(s_1)$ 在深度 1–4 都是 0：$+1$ 格离 $s_1$ 至少 5 步，深度不够就看不到任何奖励（$-1$ 能避开，所以 max 取 0）；深度 5 才第一次变成 0.2372。要接近 0.5452 需要更深，可以点“和 MCTS 比较”看深度 30 的结果。
 4. 点“和 MCTS 比较”：深度 30 的 Expectimax（≈ 精确的 $Q^*$）与 200 次迭代 MCTS 的样本平均放在一起。` },
     compare: R`
 下表中的 Expectimax 指本站交互使用的版本：完整展开、固定深度、深度用完的节点按 0 计。
@@ -839,7 +842,7 @@ prior 最高的是 $a_2$，它也被访问得最多；但搜索发现 $a_1$ 的 
 | Expansion | simulator | 已知围棋规则 | 已知围棋规则 |
 | 叶节点评估 | 随机 rollout | $(1-\lambda)v_\theta+\lambda z_{\text{rollout}}$ | 只用 $v_\theta(s_L)$ |
 | 回传 | 平均回报 | 平均评估 | 平均评估 |
-| 最后执行 | 最大 $Q$（课件 Gridworld 例子） | 最多访问 | 最多访问（训练时按 $\pi_t$ 抽样） |
+| 最后执行 | 最大 $Q$（课件 Gridworld 例子） | 最多访问 | 最多访问（训练时按 $\pi_t$ 抽样；$\pi_t$ 是把根节点各动作的访问次数归一化得到的落子概率，下一章细讲） |
 | 训练数据 | 无（不学习） | 人类棋谱 + 自我对弈 | 只有带搜索的自我对弈 |
 | 网络 | 无 | $p_\sigma$、快速 rollout policy、$p_\rho$、$v_\theta$ | 一个共享网络 $f_\theta\to(p_\theta,v_\theta)$ |
 `,
@@ -863,7 +866,7 @@ prior 最高的是 $a_2$，它也被访问得最多；但搜索发现 $a_1$ 的 
   {
     id: 'c38', part: 'p9', title: '自我对弈、AlphaZero、MuZero 与总结', en: 'Self-play training, AlphaZero, MuZero, comparison and summary',
     summary: 'AlphaGo Zero 的训练循环：每一步用当前网络做 MCTS，把根的访问次数变成搜索策略 $\\pi_t$ 并按它落子；对局结束记下结果 $z_t$；用 $(s_t,\\pi_t,z_t)$ 训练网络，让 $p_\\theta$ 模仿 $\\pi_t$、$v_\\theta$ 预测 $z_t$——**搜索教网络**。AlphaZero 把同一套方法用于国际象棋、将棋和围棋（允许平局）。MuZero 的搜索不再调用给定的游戏规则：它从环境经验中学一个只预测“搜索需要的东西”的内部模型 $h_\\theta,g_\\theta,f_\\theta$，在学到的模型上做 MCTS。',
-    goals: ['写出 $\\pi_t\\propto N^{1/\\tau}$，说明 τ 的作用', '写出 AlphaGo Zero 的损失并解释每一项', '区分树回传（更新 N、Q）与梯度反向传播（训练 θ）', '说出 AlphaZero 相对 AlphaGo Zero 的变化', '说出 MuZero 的三个函数、训练目标，以及模型误差的影响', '复述课件的比较表和 W11 总结'],
+    goals: ['写出 $\\pi_t\\propto N^{1/\\tau}$（$\\propto$ 读作“正比于”：先算 $N^{1/\\tau}$，再除以所有动作的总和），说明 τ 的作用', '写出 AlphaGo Zero 的损失并解释每一项', '区分树回传（更新 N、Q）与梯度反向传播（训练 θ）', '说出 AlphaZero 相对 AlphaGo Zero 的变化', '说出 MuZero 的三个函数、训练目标，以及模型误差的影响', '复述课件的比较表和 W11 总结'],
     prereq: '第 37 章',
     what: R`
 **自我对弈：搜索教网络（W11 p.34）**
@@ -927,6 +930,8 @@ $x_k$ 是搜索深度 $k$ 处学到的内部状态。MCTS 通过对内部状态�
 
 **损失各项的最小值**：value 项在 $v_\theta(s_t)=z_t$ 时为 0；policy 项（交叉熵）在 $p_\theta=\pi_t$ 时最小，最小值等于 $\pi_t$ 的熵 $-\sum_a\pi_t\log\pi_t$。
 
+Cross-entropy（交叉熵）$-\sum_a\pi_t(a)\log p_\theta(a)$ 用目标分布 $\pi_t$ 给 $-\log p_\theta$ 加权：$\pi_t$ 把概率放在哪些动作上，$p_\theta$ 就必须在那些动作上也给大概率，否则 $-\log p_\theta$ 很大。两者完全相同时这一项最小，最小值是 Entropy（熵）$-\sum_a\pi_t\log\pi_t$，它衡量 $\pi_t$ 本身有多分散。这里的 log 是自然对数 ln。
+
 **两种 backpropagation**
 - 树回传：沿搜索路径更新每条边的 $N(s,a)$ 和平均 $Q(s,a)$，在**每次搜索迭代**中进行，不改网络。
 - 梯度反向传播：对损失 $L(\theta)$ 求梯度、更新网络参数 $\theta$，在**收集到自我对弈数据之后**进行。
@@ -960,7 +965,7 @@ $x_k$ 是搜索深度 $k$ 处学到的内部状态。MCTS 通过对内部状态�
 - policy 项：$-\sum_a\pi_t(a)\log0.25=\log4\times\sum_a\pi_t(a)=1.386$；
 - 合计 $1.546$。
 
-如果网络的 policy 恰好等于 $\pi_t$，policy 项降到 $\pi_t$ 的熵 $0.700$——这是它能达到的最小值。
+如果网络的 policy 恰好等于 $\pi_t$，policy 项降到 $\pi_t$ 的熵：$0.142\times1.952+0.787\times0.240+0.027\times3.626+0.044\times3.115\approx0.700$（每项是 $\pi_t(a)\times(-\ln\pi_t(a))$）——这是它能达到的最小值。
 `,
     viz: { id: 'selfplay', guide: R`
 **怎么用**：

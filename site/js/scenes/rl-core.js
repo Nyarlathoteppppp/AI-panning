@@ -196,7 +196,7 @@
         set: util.merge(util.each(4, ai => ({ ['an' + ai + '.op']: 1, ['aq' + ai + '.op']: 1, ['ea' + ai + '.op']: 1, ['ea' + ai + '.stroke']: PAL.orange, ['ea' + ai + '.stroke-width']: 2.5 })), { 'rootv.num': avg, 'rootvl.tex': R`=(T_\pi V_1)(s_{10})`, 'rootvl.color': PAL.orange, 'rootv.fill': PAL.orange }),
         pulse: ['root'], dur: 1300, hl: ['pi'],
         tex: R`\htmlClass{fx-V}{(T_\pi V_1)(s)}=\sum_a\htmlClass{fx-pi}{\pi(a\mid s)}\sum_{s'}p(s'\mid s,a)[r+\gamma V_1(s')]`,
-        cap: '对比一次 Bellman **期望备份**：如果 policy 是四个方向各 $\\tfrac14$ 的随机策略，就不取最大，而是按 $\\pi$ 加权平均：$\\tfrac14(' + Q.map(f3).join('+') + ')=' + f3(avg) + '$。这得到的是对旧表 $V_1$ 做一次备份的 0.430，**不是**随机策略已收敛的 $v_\\pi$。'
+        cap: '对比一次 Bellman **期望备份**：如果 policy 是四个方向各 $\\tfrac14$ 的随机策略，就不取最大，而是按 $\\pi$ 加权平均：$\\tfrac14(' + Q.map(f3).join('+') + ')=' + f3(avg) + '$。这得到的是对旧表 $V_1$ 做一次备份的 0.430，**不是**随机策略已收敛的 $v_\\pi$。（公式条里的 $T_\\pi V_1$ 就是“拿 $V_1$ 按 $\\pi$ 做一次期望备份得到的新表”。）'
       });
       return frames;
     }
@@ -327,7 +327,7 @@
         set: util.merge(util.each(3, i => ({ ['mg' + i + '.op']: 1, ['mg' + i + '.tx']: X(i), ['mg' + i + '.ty']: YM + 40, ['mv' + i + '.num']: G[i] })), { 'mnote.text': 'MC：从后往前算 G，每个状态都拿到真实回报', 'tnote.text': '' }),
         timing: util.merge(...[2, 1, 0].map((i, n) => ({ ['mg' + i]: [n * 0.25, n * 0.25 + 0.4], ['mv' + i]: [n * 0.25 + 0.35, n * 0.25 + 0.5] }))),
         dur: 2000, pulse: ['mn0', 'mn1', 'mn2'], hl: ['G'],
-        cap: '**MC 要等 episode 结束**，才倒着算出 $G_C=1$、$G_B=0.9$、$G_A=0.81$，三个状态一次全改（第一条 episode，平均值就是这个回报）。'
+        cap: '**MC 要等 episode 结束**，才倒着算出 $G_C=1$、$G_B=0.9$、$G_A=0.81$，三个状态一次全改（第一条 episode，平均值就是这个回报）。注意 C 这里是 1、TD 那边只有 0.1，主要是步长不同（MC 取平均，第一次就等于回报；TD 用 $\\alpha=0.1$）；TD 和 MC 的真正区别是：TD 的 A、B 还是 0。'
       });
       // episode 2 for TD
       frames.push({

@@ -8,7 +8,7 @@
     latex: R`\htmlClass{fx-cur}{V(S_t)}\leftarrow \htmlClass{fx-cur}{V(S_t)}+\htmlClass{fx-lr}{\alpha}\,\htmlClass{fx-err}{\big[\htmlClass{fx-tgt}{\htmlClass{fx-r}{R_{t+1}}+\gamma\,\htmlClass{fx-boot}{V(S_{t+1})}}-V(S_t)\big]}`,
     parts: [
       { key: 'cur', label: 'current estimate', color: 'blue', text: '被更新的旧估计 $V(S_t)$：在刚离开的状态上，我们原来以为能拿多少。' },
-      { key: 'lr', label: 'learning rate α', color: 'purple', text: '每次向 target 移动的比例。α=1 直接替换为 target；α 小则平滑多个有噪声的样本。' },
+      { key: 'lr', label: 'learning rate α', color: 'purple', text: '每次向 target 移动的比例。α=1 直接替换为 target；α 小则平滑多个有噪声的样本。TD 的 target 里含有还在变化的估计 $V(S_{t+1})$，早期的 target 不太准，所以常用常数 α 让新的 target 权重更大（也可以用 1/N）。' },
       { key: 'r', label: 'reward', color: 'green', text: '这一步真实得到的奖励 $R_{t+1}$——这是**已经发生**的部分。' },
       { key: 'boot', label: 'bootstrap estimate', color: 'teal', text: '对剩余未来的**估计** $V(S_{t+1})$。用一个估计去修正另一个估计，这就叫 bootstrapping。若 $S_{t+1}$ 是终止状态，这一项为 0。' },
       { key: 'tgt', label: 'TD target', color: 'orange', text: '$Y_t=R_{t+1}+\\gamma V(S_{t+1})$：一步真实奖励 + 折扣后的估计未来。对应 Bellman 方程中“一步奖励加后续价值”，但只用这一次采到的后继，而不是对所有后继求期望。' },
@@ -97,13 +97,13 @@ $$\pi'(s)=\arg\max_a\sum_{s'}p(s'\mid s,a)[r+\gamma V(s')]$$
 1. 智能体在 $s_{10}$，按 ε-greedy（ε 很小）选 **Up**；
 2. Up 有 0.8 的概率撞上边界、**留在 $s_{10}$**；于是又回到第 1 步……
 
-MC 在 episode 结束前不会更新任何 Q，所以“选 Up → 撞墙”会一直重复。**能打破循环的只有概率**：偶尔滑到 $s_{11}$ 或 $s_9$，或者偶尔探索到别的动作。下一章的 TD 会怎样处理？见第 18 章。
+MC 在 episode 结束前不会更新任何 Q，所以“选 Up → 撞墙”会一直重复。**能打破循环的只有概率**：偶尔滑到 $s_{11}$ 或 $s_9$，或者偶尔探索到别的动作。换成 TD 就不一样了：它每走一步就更新，撞一次墙 $Q(s_{10},\text{Up})$ 就会下降，可能在 episode 中途就改选 Right。
 `,
     viz: { id: 'mccontrol', guide: R`
 **怎么用**：
 
 1. “训练 MC control”：点“1 条 episode”几次，看 Q 三角形只在**整条 episode 结束后**才变化，贪心箭头逐渐指向终点；再点“200 条”，观察“当前贪心 policy 的真实价值”接近 0.5452。（这个数是网站后台用已知模型精确评估“每格选 Q 最大的动作”这个 policy 得到的，只用来给你看学得怎样，学习算法本身拿不到它。）
-2. 改 ε：ε=0 时常常卡在某条次优路线；ε 太大则每条 episode 都很长。
+2. 改 ε：ε=0 时 Q 全为 0、只能按贪心走，智能体容易在墙边原地打转，episode 走满 200 步都不结束；MC 拿不到完整 return，读数会显示“未用于更新”——这正是下面 $s_{10}$ 循环问题的极端版。ε 很大时，学到的贪心 policy 通常没问题（真实价值接近 0.5452），但训练中的 $G_0$ 曲线明显更低、后期 episode 更长，因为行为里随机动作太多。
 3. 切到“局限：s10 循环”，一步步走：Q 表一个数都不变，智能体反复选 Up 撞墙，直到某次滑出去。` },
     compare: R`
 | | Policy Iteration | MC Control |
@@ -148,9 +148,9 @@ MC 在 episode 结束前不会更新任何 Q，所以“选 Up → 撞墙”会�
    - **Bootstrapping 更新**：
 $$Q(S_t,A_t)\leftarrow Q(S_t,A_t)+\alpha\big[R_{t+1}+\gamma V(S_{t+1})-Q(S_t,A_t)\big]$$
 
-本例的 policy 是确定性的，所以 $V(S_{t+1})$ 就是下一状态按 policy 选的动作的价值：$V(S_{t+1})=Q(S_{t+1},\pi(S_{t+1}))$。若 policy 是随机的，则 $V(S_{t+1})=\sum_a\pi(a\mid S_{t+1})Q(S_{t+1},a)$，或采样下一动作 $A_{t+1}$ 用 $Q(S_{t+1},A_{t+1})$（这就是第 20 章的 SARSA）。
+本例的 policy 是确定性的，所以 $V(S_{t+1})$ 就是下一状态按 policy 选的动作的价值：$V(S_{t+1})=Q(S_{t+1},\pi(S_{t+1}))$。若 policy 是随机的，则 $V(S_{t+1})=\sum_a\pi(a\mid S_{t+1})Q(S_{t+1},a)$，或采样下一动作 $A_{t+1}$ 用 $Q(S_{t+1},A_{t+1})$（这就是后面要学的 SARSA）。
 
-**状态价值版本 TD(0)**（W8-2 的 n-step 公式取 $n=1$）：
+**状态价值版本 TD(0)**：只看 1 步真实奖励，剩下的用估计补上（所以也叫 one-step TD）。名字里的 0 来自后面 TD(λ) 中 λ=0 的情形，不是“0 步”：
 
 $$V(S_t)\leftarrow V(S_t)+\alpha\big[R_{t+1}+\gamma V(S_{t+1})-V(S_t)\big]$$
 `,
@@ -201,7 +201,7 @@ target $=0+0.9\times0.8=0.72$；TD error $=0.72-0.2=0.52$；新估计 $=0.2+0.1\
 对比 MC：Episode 3 后 MC 的 $Q(s_{10},\text{R})=0.3667$（平均了三个 return），TD 只是 0.1718（每次只移动 α=0.1 的比例，并且依赖下一状态的估计）。
 `,
     viz: { id: 'td', guide: R`
-**怎么用**：一步步点“走一步”。每一步三张卡片显示 **① TD target → ② TD error → ③ 更新**，下面的数轴画出“旧估计 → target”的距离（红）和实际移动的 α 部分（青）。
+**怎么用**：一步步点“走一步”。每一步三张卡片显示 **① TD target → ② TD error → ③ 更新**，下面的数轴画出“旧估计 → target”的距离（红）和实际移动的 α 部分（青）。数轴上：蓝点 = 旧估计，绿点 = target，青点 = 新估计（配色和上面动画不同：动画里 target 是粉色）。
 
 1. 核对上表三条 episode 的数值（$Q(s_{10},\text{R})$：0.1 → 0.19 → 0.1718；$Q(s_6,\text{U})$：0.009 → −0.0919）。
 2. 每一步下方还给出同一步 MC 的 target（完整 return），比较两者何时一致、何时相反。
@@ -211,7 +211,7 @@ target $=0+0.9\times0.8=0.72$；TD error $=0.72-0.2=0.52$；新估计 $=0.2+0.1\
 |---|---|---|---|
 | 需要模型 | 是 | 否 | 否 |
 | target | $\sum p[r+\gamma V]$（期望） | $G_t$（实际 return） | $R+\gamma V(S')$（一步样本 + 估计） |
-| bootstrapping | 是 | 否 | 是 |
+| bootstrapping | 是（backup 用的是上一轮的估计 $V_k(s')$） | 否 | 是 |
 | 采样 | 否 | 是（整条） | 是（一步） |
 | 何时更新 | 任何时候 | episode 结束 | 每一步 |
 
@@ -256,6 +256,8 @@ target $=0+0.9\times0.8=0.72$；TD error $=0.72-0.2=0.52$；新估计 $=0.2+0.1\
 - **Bias**：$\mathrm{Bias}(\hat\theta)=\mathbb E[\hat\theta]-\theta$（期望离真值多远）；
 - **Variance**：$\mathrm{Var}(\hat\theta)=\mathbb E[(\hat\theta-\mathbb E[\hat\theta])^2]$（围绕自己期望的波动）；
 - **MSE**：$\mathrm{MSE}(\hat\theta)=\mathrm{Bias}(\hat\theta)^2+\mathrm{Var}(\hat\theta)$。一般想让 MSE 最小；降低偏差常常会增大方差，反之亦然。
+
+放到 RL 里：$\theta$ = 真值 $v_\pi(s)$；$\hat\theta$ = 某个方法给出的数，可以是**一个 target**（$G_t$ 或 $R_{t+1}+\gamma V(S_{t+1})$），也可以是**训练一段时间后的 $V(s)$**。随机性来自“重新跑一次，打滑和轨迹都会不同”，$\mathbb E[\hat\theta]$ 就是同一方法独立重复无数次后的平均。下面“直觉”讲的是 target 的偏差和方差，右侧实验的图讲的是重复训练很多次后的 $V(s_1)$。
 `,
     why: R`
 **TD 解决了 MC control 的循环问题吗？**（课件 slide 32、41）回到 $s_{10}$，用同一张构造的 Q 表（Up 0.86、Right 0.8527）：选 Up 后撞墙留在 $s_{10}$，取 $\alpha=0.2$：
@@ -264,9 +266,9 @@ $$\Delta=0+\gamma Q(s_{10},\text{Up})-Q(s_{10},\text{Up})=0.9\times0.86-0.86=-0.
 $$Q(s_{10},\text{Up})\leftarrow0.86+0.2\times(-0.086)=0.8428$$
 
 - 仅有 TD **prediction**（policy 固定）时：价值变了，但动作选择还按给定 policy——“还没有”解决。
-- TD **control**（对当前 Q 选动作）：0.8428 已经低于 $Q(s_{10},\text{Right})=0.8527$，贪心动作立刻变成 Right——下一次在 $s_{10}$ 按贪心选就会选 Right（保留 ε 探索时，是“更倾向”Right）。TD 发现价值变化，并在 episode 中途就改变 policy。（这里用的是 Up 之后仍留在 $s_{10}$、bootstrap 用 $Q(s_{10},\text{Up})$ 的算法；SARSA 若已经抽好了下一步动作 $A'$，要先执行 $A'$ 一次。）
+- TD **control**（对当前 Q 选动作）：0.8428 已经低于 $Q(s_{10},\text{Right})=0.8527$，贪心动作立刻变成 Right——下一次在 $s_{10}$ 按贪心选就会选 Right（保留 ε 探索时，是“更倾向”Right）。TD 发现价值变化，并在 episode 中途就改变 policy。（这里 bootstrap 用的是 $Q(s_{10},\text{Up})$：Up 恰好是 $s_{10}$ 当前 Q 最大的动作，所以无论按实际下一动作还是按 max 取值，target 都一样。）
 
-**怎样比较 control 算法？**（W8-2）问题是：模型未知，要尽快学到最优 policy。比较的是：学到好 policy 需要多少次交互（样本效率），以及学到的 policy 的质量 $J(\pi)=\mathbb E_{s_0}\mathbb E_\pi[G]$。模型已知时可以直接算 $J(\pi)$；未知时要在环境中采样估计。
+**怎样比较 control 算法？**（W8-2）问题是：模型未知，要尽快学到最优 policy。比较的是：学到好 policy 需要多少次交互（样本效率），以及学到的 policy 的质量 $J(\pi)=\mathbb E_{s_0}\mathbb E_\pi[G]$（外层 $\mathbb E_{s_0}$ 是对起点求平均；本课 Gridworld 固定从 $s_1$ 出发，这一层就退化了）。模型已知时可以直接算 $J(\pi)$；未知时要在环境中采样估计。
 
 **课堂 quiz：能不能直接用学到的 $Q(s,a)$ 评价 policy？** 不能直接这么做。学到的 Q 是训练过程中的估计（可能有偏、可能对应带探索的行为 policy），应当固定学到的 policy，在环境中重新评估它的期望 return。
 `,
@@ -275,7 +277,7 @@ $$Q(s_{10},\text{Up})\leftarrow0.86+0.2\times(-0.086)=0.8428$$
 
 **方差从哪里来**：MC 的 target $G_t$ 包含整条轨迹上每一次动作随机性、环境滑移和奖励变化，所以波动大；TD 的 target 只显式采样一步，后面用（平均意义上的）估计代替，波动小。
 
-**偏差从哪里来**：$\mathbb E[G_t\mid S_t=s]=v_\pi(s)$，所以 MC 的 target 无偏。TD 的 target 用 $V(S_{t+1})$，如果它估错了，误差就进入 target：给定当前表 $V$，这个偏差是 $\gamma\,\mathbb E[V(S_{t+1})-v_\pi(S_{t+1})\mid S_t=s]$。价值估准以后偏差就消失——不是“用了 TD 就永远有偏差”。
+**偏差从哪里来**：$\mathbb E[G_t\mid S_t=s]=v_\pi(s)$，所以 MC 的 target 无偏。TD 的 target 用 $V(S_{t+1})$，如果它估错了，误差就进入 target：给定当前表 $V$，这个偏差是 $\gamma\,\mathbb E[V(S_{t+1})-v_\pi(S_{t+1})\mid S_t=s]$。推导：Bellman 期望方程 $v_\pi(s)=\mathbb E[R_{t+1}+\gamma v_\pi(S_{t+1})\mid S_t=s]$；用 $\mathbb E[R_{t+1}+\gamma V(S_{t+1})\mid S_t=s]$ 减去它，两边 $R_{t+1}$ 的期望相同、相减抵消，只剩 $\gamma(V-v_\pi)$ 这一项。MC 的 $G_t$ 里没有 $V$，所以差是 0。价值估准以后偏差就消失——不是“用了 TD 就永远有偏差”。
 `,
     math: R`
 $$\mathrm{MSE}(\hat\theta)=\underbrace{\big(\mathbb E[\hat\theta]-\theta\big)^2}_{\text{Bias}^2}+\underbrace{\mathbb E\big[(\hat\theta-\mathbb E[\hat\theta])^2\big]}_{\text{Variance}}$$
@@ -317,12 +319,12 @@ $$\mathrm{MSE}(\hat\theta)=\underbrace{\big(\mathbb E[\hat\theta]-\theta\big)^2}
 | 新 $Q(s_{10},\text{Up})$ | $0.86-0.2\times0.086=0.8428$ |
 | $Q(s_{10},\text{Right})$ | 0.8527 > 0.8428 ⇒ 贪心动作变为 Right（ε-greedy 下是更倾向 Right） |
 
-**用数字体会 bias 与 variance**：右侧实验固定最优 policy，从 $s_1$ 出发（真值 0.5452），对比 first-visit MC 与 TD(0)（α=0.1，初始 0，相同轨迹）。典型结果：前几十条 episode，TD 的平均估计明显偏低（信息要从终点一步步传回 $s_1$）；之后 TD 的方差约为 MC 的几分之一。
+**用数字体会 bias 与 variance**：右侧实验固定最优 policy，从 $s_1$ 出发（真值 0.5452），对比 first-visit MC 与 TD(0)（α=0.1，初始 0，相同轨迹）。典型结果：前几十条 episode，TD 的平均估计明显偏低（信息要从终点一步步传回 $s_1$）；这段时间 TD 的方差接近 0，只是因为每次运行的估计都还停在 0，不代表学得好。默认 150 条内 MC 的 MSE 基本更低；把“每次 episode 数”调到 300–400，才能看到 TD 的方差降到 MC 的约 1/4。
 `,
     viz: { id: 'biasvar', guide: R`
 **怎么用**：
 
-1. “Bias / Variance 实验”：三张图分别是平均学到的 $V(s_1)$、Bias²、Variance。MC 的 target 无偏，它的偏差只来自 V=0 的初始化，按 $(1-\alpha)^k$ 很快衰减，但方差一直较高；TD 的偏差还来自尚未准确的后继估计，所以早期偏差更大、后期方差小。调大 α，两者的方差都会上升。
+1. “Bias / Variance 实验”：三张图分别是平均学到的 $V(s_1)$、Bias²、Variance。这里两种方法都用常数 α（不是 1/N）。MC 的 target 无偏，它的偏差只来自 V=0 的初始化：$s_1$ 被更新 $k$ 次后，初始值还剩 $(1-\alpha)^k$ 的权重，很快衰减，但方差一直较高；TD 的偏差还来自尚未准确的后继估计，所以早期偏差更大、后期方差小。调大 α，两者的方差都会上升。
 2. “TD 跳出 s10 循环”：一步步走，看 Q(s10,Up) 第一次撞墙后就从 0.86 降到 0.8428，贪心动作随即变成 Right。与第 16 章 MC 的同一场景对比。` },
     compare: R`
 | | MC control | TD control |

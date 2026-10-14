@@ -53,7 +53,7 @@
         const ev = evaluateAliased(policyFor(p), 0.9, 100);
         clear(pic).put(aliasedSVG(policyFor(p)));
         clear(out).put(table(['起点', 'w1', 'g1', 'w2', 'g2', 'w3', '平均'], [
-          ['期望折扣回报 V', ...ev.V.map(v => fmt(v, 3)), h('b', fmt(ev.J, 3))], ['100 步内到达 $ 的概率', ...ev.P.map(v => fmt(v, 3)), h('b', fmt(ev.goal, 3))]]),
+          ['期望折扣回报 V', ...ev.V.map(v => fmt(v, 3)), h('b', fmt(ev.J, 3))], ['100 步内到达钱袋的概率', ...ev.P.map(v => fmt(v, 3)), h('b', fmt(ev.goal, 3))]]),
           h('p.viz-note', p === 1 ? '确定性“灰格都向右”：从 g2 或 w3 出发会在 g2 ↔ w3 之间永远来回（w3 向左回到 g2，g2 又向右）。平均到达率只有 3/5 = 0.6。'
             : p === 0 ? '确定性“灰格都向左”：对称地，从 w1、g1 出发会卡住。'
               : 'π(Right|grey) = ' + fmt(p, 2) + '：卡住的循环会以概率被打破。p = 0.5 时两边对称，平均回报最高。'));
@@ -128,7 +128,7 @@
           const P = pol(), ev = evaluateAliased(P, 0.9, 100);
           clear(pic).put(aliasedSVG(P));
           clear(out).put(table(['观察', ...ACT.map(a => 'π(' + a + ')'), ...ACT.map(a => 'h(' + a + ')')], Object.keys(H).map(o => [o, ...ACT.map(a => fmt(P[o][a], 3)), ...H[o].map(v => fmt(v, 2))])),
-            readout([['已训练 episode', String(episodes)], ['当前 policy 的平均期望回报 J', fmt(ev.J, 3) + '（最好的确定性 policy 0.542）'], ['100 步内到达 $ 的概率', fmt(ev.goal, 3)]]));
+            readout([['已训练 episode', String(episodes)], ['当前 policy 的平均期望回报 J', fmt(ev.J, 3) + '（最好的确定性 policy 0.542）'], ['100 步内到达钱袋的概率', fmt(ev.goal, 3)]]));
           clear(chart).put(h('h4', '纵轴：π(Right | grey)；虚线 0.5＝最好的对称随机 policy（策略）'),
             hist.length > 1 ? [RL.vizUtil.lineChart([{ values: hist, color: 'orange' }, { values: hist.map(() => 0.5), color: 'gray', dash: '4 3' }], { xlabel: 'episode / 10', min: 0, max: 1 }), h('p.muted', 'π(Right | grey) 的变化：REINFORCE 会把它推向 0.5 附近——确定性的 Q-learning 做不到。')] : null);
         }
@@ -168,7 +168,7 @@
         const n = S.onehot ? 3 : 2; if (S.theta.length !== n) S.theta = new Array(n).fill(0).map((_, i) => S.theta[i] || 0);
         for (let i = 0; i < n; i++) thetaSliders.put(slider('θ' + (i + 1), { min: -2, max: 2, step: 0.1, value: S.theta[i], format: v => v.toFixed(1), onInput: v => { S.theta[i] = v; draw(); } }));
       }
-      el.put(segmented([{ value: false, label: '线性特征（2 维，共享）' }, { value: true, label: 'one-hot 特征（= tabular）' }], S.onehot, v => { S.onehot = v; buildSliders(); draw(); }, '特征'),
+      el.put(segmented([{ value: false, label: '线性特征（2 维，共享）' }, { value: true, label: 'one-hot 特征（= tabular）' }], S.onehot, v => { S.onehot = v; S.theta = v ? [0, 0, 0] : [0.5, -0.5]; buildSliders(); draw(); }, '特征'),
         thetaSliders, h('div.viz-row', h('span', '选中的动作：'), segmented([0, 1, 2].map(i => ({ value: i, label: 'a' + (i + 1) })), S.a, v => { S.a = v; draw(); }, 'A_t')),
         slider('G（已含 γᵗ）', { min: -2, max: 2, step: 0.1, value: S.G, format: v => v.toFixed(1), onInput: v => { S.G = v; draw(); } }),
         slider('α', { min: 0.01, max: 1, step: 0.01, value: S.alpha, format: v => v.toFixed(2), onInput: v => { S.alpha = v; draw(); } }), out);

@@ -123,7 +123,7 @@
         clear(compare).put(h('h4', (kind === 'eps' ? '不同 ε 的 ε-greedy' : '五种策略') + '：' + runs + ' 次独立运行的平均' + (P.drift ? '（第 ' + T / 2 + ' 步发生 drift）' : '')),
           chart(series, { xlabel: '步数 t', vline: P.drift ? T / 2 : null, min: 0, max: 3.2 }), legend(series.map(s => [s.color, s.label])),
           table(['策略', '平均累计奖励'], series.map(s => [s.label, fmt(s.total, 0)])),
-          h('p.muted', kind === 'eps' ? 'ε=0 常常锁死在早期看起来不错的机器上；ε 太大则浪费太多步在已知较差的机器上。' : '课件的对比图中 UCB 表现最好、τ=1 的 softmax 最差；有 drift 时，探索已经变得很少的策略（ε-decreasing、计数很大的 UCB）适应得最慢。'));
+          h('p.muted', kind === 'eps' ? 'ε=0 常常锁死在早期看起来不错的机器上；ε 太大则浪费太多步在已知较差的机器上。' : '课件的对比图中 UCB 表现最好、τ=1 的 softmax 最差；有 drift 时课件图里 ε-decreasing 和 UCB 适应最慢。本站的 drift 很剧烈（D 从 3 掉到 0），D 的平均很快被拉低、A 的加分又大，所以这里 UCB 反而恢复得最快；ε 已衰减到接近 0 的 ε-decreasing 和 ε-first 适应最差。'));
       }
       const stratSeg = segmented(STRATS, P.strategy, v => { P.strategy = v; paramControls(); reset(); }, '策略');
       const driftBox = h('input', { type: 'checkbox' }); driftBox.addEventListener('change', () => { P.drift = driftBox.checked; reset(); });

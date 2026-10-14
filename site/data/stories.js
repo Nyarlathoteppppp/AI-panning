@@ -28,7 +28,7 @@
     c20: R`SARSA 这个名字就是它的更新要用到的五样东西：$S_t, A_t, R_{t+1}, S_{t+1}, A_{t+1}$——记住名字就记住了算法。它由 Rummery 和 Niranjan 在 1994 年提出，当时叫 “modified connectionist Q-learning”；SARSA 这个好记的名字是 Sutton 后来起的。`,
     c21: R`Q-learning 出自 Chris Watkins 1989 年在剑桥大学的博士论文《Learning from Delayed Rewards》，1992 年他和 Peter Dayan 证明了它在表格情形下会收敛到最优 Q。“Q”通常被解释为 quality：一个动作在某个状态下有多“好”。`,
     c25: R`DeepMind 在 2013 年用 DQN 直接从 Atari 游戏的屏幕像素学打游戏，2015 年在《Nature》上发表：同一个网络结构、同一套参数，学会了 49 个游戏，其中很多达到或超过人类水平。最出名的是《打砖块》（Breakout）：它自己学会先在一侧凿出一条通道，把球打到砖墙后面来回反弹。DQN 用的 experience replay 早在 1992 年就由 Long-Ji Lin 提出。`,
-    c27: R`REINFORCE 是 Ronald Williams 1992 年起的名字，它本身就是一个缩写，拼出来正好是更新公式：**RE**ward **I**ncrement = **N**onnegative **F**actor × **O**ffset **R**einforcement × **C**haracteristic **E**ligibility。对应过来就是 $\Delta\theta=\alpha\times(G_t-b)\times\nabla\log\pi(a\mid s)$：非负的学习率 × 减去参照值后的回报 × score function。`,
+    c27: R`REINFORCE 是 Ronald Williams 1992 年起的名字，它本身就是一个缩写，拼出来正好是更新公式：**RE**ward **I**ncrement = **N**onnegative **F**actor × **O**ffset **R**einforcement × **C**haracteristic **E**ligibility。对应过来就是 $\Delta\theta=\alpha\times(G_t-b)\times\nabla\log\pi(a\mid s)$：非负的学习率 × 减去参照值后的回报 × score function。（$b$ 是 baseline（基线）：先从 $G_t$ 里减掉的一个参照值，例如这个状态平时的平均回报；本章的版本相当于 $b=0$，W10-2 再讲为什么要减。）`,
     c28: R`Policy gradient theorem 由 Sutton、McAllester、Singh 和 Mansour 在 NIPS 1999（2000 年出版）发表。它的妙处在于：梯度里不需要对“状态分布怎么随 θ 变化”求导，所以不需要知道环境模型也能估计梯度。`,
     c30: R`回头看 REINFORCE 名字里的 “Offset Reinforcement”：offset 就是“减去一个参照值”，也就是本章的 baseline。Williams 在 1992 年提出 REINFORCE 时就已经把 baseline 写进了公式。`,
     c31: R`Actor-critic 最早出现在 Barto、Sutton 和 Anderson 1983 年的“倒立摆”（pole balancing，小车上立一根杆子不让它倒）实验里：一个模块负责选动作（当时叫 ASE），另一个模块负责评价好坏（叫 ACE，adaptive critic element）。“演员 + 评论家”的分工从那时一直沿用到今天。`,

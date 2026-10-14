@@ -53,7 +53,7 @@ $$\hat V(s;\mathbf w)\approx v_\pi(s),\qquad \hat Q(s,a;\mathbf w)\approx q_\pi(
 “用什么当学习目标”（MC 的 $G_t$、SARSA 的 $R+\gamma Q(S',A')$、Q-learning 的 $R+\gamma\max Q$）与“用什么表示价值”（表格 / 线性 / 神经网络）互相独立。换成函数近似**不会**改变 on/off-policy，也**不会**自动解决探索问题。
 :::
 
-**表格是线性模型的特例**：给每个 $(s,a)$ 一个独有的 one-hot 特征，权重就是整张表摊平后的数字——每次更新只碰一个权重，完全没有共享。不同的 $(s,a)$ 使用**重叠的**非零特征时，才开始真正共享。
+**表格是线性模型的特例**：给每个 $(s,a)$ 一个独有的 one-hot 特征（长度为 $|S||A|$ 的向量，只有自己那一位是 1、其余全为 0；例如共有 4 个 $(s,a)$ 时 $\mathbf x(s_1,a_2)=(0,1,0,0)$，于是 $\mathbf w^\top\mathbf x=w_2$，正好取出表中那一格），权重就是整张表摊平后的数字——每次更新只碰一个权重，完全没有共享。不同的 $(s,a)$ 使用**重叠的**非零特征时，才开始真正共享。
 `,
     math: R`
 **回顾**：通用更新 $\text{estimate}\leftarrow\text{estimate}+\alpha(\text{target}-\text{estimate})$；对一条采样的 $(S_t,A_t,R_{t+1},S_{t+1})$：
@@ -74,7 +74,7 @@ $$Y_t=R_{t+1}+\gamma\max_b\hat Q(S_{t+1},b;\mathbf w)$$
 
 $$\mathbf w\leftarrow\mathbf w+\alpha\big(Y_t-\hat Q(S_t,A_t;\mathbf w)\big)\nabla_{\mathbf w}\hat Q(S_t,A_t;\mathbf w)$$
 
-这是对损失 $L(\mathbf w)=\big(Y_t-\hat Q(S_t,A_t;\mathbf w)\big)^2$ 的**随机梯度下降**（SGD）一步（求导多出的系数 2 被吸收进 α）。
+这是对损失 $L(\mathbf w)=\big(Y_t-\hat Q(S_t,A_t;\mathbf w)\big)^2$ 的**随机梯度下降**（SGD）一步（求导多出的系数 2 被吸收进 α）。梯度 $\nabla L$ 指向让 $L$ 增长最快的方向，所以往 $-\nabla L$ 走一小步，$L$ 就会变小，这叫梯度下降。“随机”是指每次只用眼前这一个样本的损失，而不是所有 $(s,a)$ 的平均损失：单步有噪声，平均下来方向是对的。
 `,
     formulas: [{
       title: '函数近似下的 Q-learning 更新',
@@ -91,12 +91,12 @@ $$\mathbf w\leftarrow\mathbf w+\alpha\big(Y_t-\hat Q(S_t,A_t;\mathbf w)\big)\nab
 **同一条理想轨迹，两种表示学到什么**（W9 slides 19–29）：轨迹 $s_1\uparrow s_5\uparrow s_8\rightarrow s_9\rightarrow s_{10}\rightarrow s_{11}(+1)$，α=0.1。
 
 - **Tabular Q-learning**：前 4 次更新 target 都是 0（下一状态的 Q 还都是初始值 0，不是那些动作没价值）；第 5 次 $Q(s_{10},\text{Right})=0.1$。一条 episode 后只有 1 个格子非零，其他 8 个状态的贪心动作仍是平局。
-- **线性近似（Method 1，下一章）**：最后一次更新把 $\mathbf w$ 从 $(0,0)$ 改成 $(0.02,0.04)$，于是**所有非终止状态**的 $\hat V$ 都变了（$s_{10}$ 为 0.02，$s_6$ 为 0.016……；终止状态仍为 0），大多数状态因此有了明确的贪心动作（个别状态仍可能平局，例如 $s_1$ 的 Left 与 Down 都是 0.04572）。
+- **线性近似（Method 1，下一章）**：最后一次更新把 $\mathbf w$ 从 $(0,0)$ 改成 $(0.02,0.04)$，于是**所有非终止状态**的 $\hat V$ 都变了（$s_{10}$ 为 0.02，$s_6$ 为 0.016……；终止状态仍为 0），大多数状态因此有了明确的贪心动作（个别状态仍可能平局，例如 $s_1$ 的 Left 与 Down 都是 0.04572；动作价值由已知模型从 $\hat V$ 展开一步得到，下一章细讲）。
 
 一次经验，影响范围完全不同——这就是共享参数。
 `,
     viz: { id: 'tablesize', guide: R`
-**怎么用**：点四个预设复现课件表格；拖动“同时按键数”，看动作数怎样按 $2^k$ 爆炸。下方表格比较参数数量：线性近似只需要几个参数。` },
+**怎么用**：点四个预设复现课件表格；把动作模式切到“k 个可同时按下的按键”（或点带按键的预设），再拖动“可同时按下的按键数量 k”，看动作数怎样按 $2^k$ 爆炸。下方表格比较参数数量：线性近似只需要几个参数。` },
     compare: R`
 | | Tabular | 线性近似 | 神经网络近似 |
 |---|---|---|---|
@@ -117,7 +117,7 @@ $$\mathbf w\leftarrow\mathbf w+\alpha\big(Y_t-\hat Q(S_t,A_t;\mathbf w)\big)\nab
       { kind: '公式计算', q: '40×30 网格中有 10×10 的墙和 2 个终止格。非终止状态有多少个？', answer: 1098, tol: 0, explain: '$1200-100-2=1098$。' },
       { kind: '公式计算', q: '40×30 网格中有 10×10 的墙和 2 个终止格，每个非终止状态有 4 个动作。Q-table 有多少条目？', answer: 4392, tol: 0, explain: '$4\\times1098=4392$。' },
       { kind: '概念判断', q: '函数近似最核心的好处是？', options: ['不需要奖励', '一次参数更新可以影响许多状态的预测（泛化）', '不再需要探索', '自动变成 on-policy'], answer: 1, explain: '参数共享使经验在状态之间传播。' },
-      { kind: '概念判断', q: '课件为什么说“函数近似下的 Q-learning 更新是 SGD 的一步”？', options: ['因为它对 $L(\\mathbf w)=(Y_t-\\hat Q)^2$ 沿负梯度移动', '因为它用了 max', '因为它用 ε-greedy', '因为它需要模型'], answer: 0, explain: '把 $Y_t$ 视为常数，$-\\nabla L\\propto(Y_t-\\hat Q)\\nabla\\hat Q$。' }
+      { kind: '概念判断', q: '课件为什么说“函数近似下的 Q-learning 更新是 SGD 的一步”？', options: ['因为它对 $L(\\mathbf w)=(Y_t-\\hat Q)^2$ 沿负梯度移动', '因为它用了 max', '因为它用 ε-greedy', '因为它需要模型'], answer: 0, explain: '把 $Y_t$ 视为常数，$-\\nabla L=2(Y_t-\\hat Q)\\nabla\\hat Q$（系数 2 吸收进 α），正是更新的方向。' }
     ],
     source: 'W9 slides 3–13（回顾 target 表、规模推导、连续 Gridworld、quiz、近似定义、函数近似下的 Q-learning 与 SGD）。'
   },
@@ -137,6 +137,8 @@ $$\hat Q(s,a;\mathbf w)=\mathbf w^\top\mathbf x(s,a)=\sum_{i=1}^dw_i\,x_i(s,a)$$
 
 1. **已知 $p$ 和 $r$**：只需近似 $\hat V(s)$，再用模型算 $\hat Q(s,a;\mathbf w)=\sum_{s'}p(s'\mid s,a)\big(r(s,a,s')+\gamma\hat V(s';\mathbf w)\big)$。
 2. **$p$ 已知、$r$ 未知**：所有动作只能共用一组权重；特征函数要考虑输入 $(s,a)$ 的结果。
+   - 为什么不能用构造 1：没有 $r$，就算不出 $\sum p\,(r+\gamma\hat V)$，只能直接学 $\hat Q$。
+   - 为什么共用权重也能区分动作：模型告诉你动作 $a$ 会把你带到哪些 $s'$，于是可以把特征定义成“执行 $a$ 之后的预期结果”，例如（本站举例，课件没给具体形式）$\mathbf x(s,a)=\sum_{s'}p(s'\mid s,a)\,\mathbf x(s')$。不同动作得到的特征不同，一组共享权重就能区分它们。这和下面“为什么”里说的并不矛盾：那里说的是特征只依赖 $s$、不依赖 $a$ 的情形。
 3. **$p$ 未知**：每个动作一组权重 $\mathbf w=(\mathbf w_{a_1}^\top,\dots,\mathbf w_{a_n}^\top)^\top$，特征 $\mathbf x(s,a)=(\mathbb 1\{a=a_1\}\mathbf x(s),\dots,\mathbb 1\{a=a_n\}\mathbf x(s))^\top$，于是
 $$\hat Q(s,a;\mathbf w)=\mathbf w^\top\mathbf x(s,a)=\mathbf w_a^\top\mathbf x(s)$$
 例：两个动作 L、R，状态特征 $\mathbf x(s)=(0.8,0.3)$。则 $\mathbf x(s,L)=(0.8,0.3,0,0)$，$\mathbf x(s,R)=(0,0,0.8,0.3)$。梯度就是特征向量，所以选 R 更新时只改后两个（R 的）权重，L 的那一块不动。
@@ -165,7 +167,7 @@ $$\mathbf w\leftarrow\mathbf w+\alpha\big[Y-\hat Q(s,a;\mathbf w)\big]\nabla_{\m
 
 加号是因为 error 定义为 target − prediction：正误差要沿“让预测变大”的方向走。
 
-**Semi-gradient**：Q-learning 的 $Y=R+\gamma\max_b\hat Q(S',b;\mathbf w)$ 本身也含参数，但更新只对当前预测求导、把 $Y$ 当常数（W10 slide 30：“Treat $Y_t$ as fixed during the weight update”）。
+**Semi-gradient**：Q-learning 的 $Y=R+\gamma\max_b\hat Q(S',b;\mathbf w)$ 本身也含参数，但更新只对当前预测求导、把 $Y$ 当常数（W10 slide 30：“Treat $Y_t$ as fixed during the weight update”）。完整的梯度还应包含 $Y$ 对 $\mathbf w$ 的那一项（$-\gamma\nabla\max_b\hat Q(S',b;\mathbf w)$）；这里故意丢掉它，只算预测那一半，所以叫 semi-gradient（半梯度）。这样做是把 target 当成监督学习里的“标签”，只把预测拉向它；如果也对 $Y$ 求导，更新会同时把“答案”往预测那边拽。代价是它不再是某个固定损失的真梯度，收敛保证变弱。
 
 **课件 Gridworld 的三种特征（已知模型，只近似 $\hat V(s)$）**
 
@@ -230,7 +232,7 @@ $$\hat Q^+(s_{10},\text{Right})=0.8\times1+0.1\times0.9\times0.0200+0.1\times0.9
     viz: { id: 'linear', guide: R`
 **怎么用**：
 
-1. 选 Method 1，点“执行课件的一次更新”：核对 $\mathbf w=(0.02,0.04)$、$\hat V(s_{10})=0.02$、$\hat V(s_6)=0.016$、$\hat Q(s_{10},\text{Right})\approx0.8032$；下方表格显示**所有**状态的预测一起变了。
+1. 选 Method 1，点“执行课件的一次更新”：核对 $\mathbf w=(0.02,0.04)$、$\hat V(s_{10})=0.02$、$\hat V(s_6)=0.016$、$\hat Q(s_{10},\text{Right})\approx0.8032$；下方表格显示**所有**状态的预测一起变了。注意 $\hat V(s_1)=0.052$ 反而是最高的：$\mathbf w$ 两个分量都为正，而两个特征都是距离，离 +1 越远 $x_1$ 越大、预测越高。这一步只知道“把 $s_{10}$ 往上推”，于是沿 $\mathbf x(s_{10})$ 的方向加权重，特征值更大的远处状态被推得更多。要表达“离 +1 越远越差”，$w_1$ 必须为负，而 δ>0 的更新只会把它往正推——这是共享参数带来“干扰”的一个直接例子。
 2. 看“特征完全相同的状态”：Method 1 有 $\{s_2,s_5\}$、$\{s_4,s_6\}$ 等；Method 2 的底行全部相同。
 3. 点“用 200 条 episode 训练”：比较三种特征最后的 $\hat V$ 与 $V^*$。Method 2 的底行永远是 0。（这个训练让 agent 按**固定的最优 policy** 走，只用线性 TD(0) 学状态价值，目的是看“特征能不能表示出正确的价值”；它不是让近似 Q-learning 自己探索、改进 policy，所以不会复现正文说的“早期负奖励导致停止探索”。）` },
     compare: R`
@@ -298,7 +300,7 @@ W9 slides 40–42 标注 **Not examinable**：概念介绍，网络计算和训�
 - 一次更新通过共享的隐藏表示影响许多状态：泛化更强，误差也可能传得更远。
 
 :::ext 延伸：DQN 的两个稳定训练技巧（课件未讲，不考）
-- **Experience replay buffer**：把经验 $(s,a,r,s')$ 存起来，训练时随机抽一小批。好处：打破连续经验之间的相关性；同一条经验可以被重复利用。
+- **Experience replay buffer**：把经验 $(s,a,r,s')$ 存起来，训练时随机抽一小批。好处：打破连续经验之间的相关性（连续几步的状态几乎一样，按顺序训练时网络会被同一片区域的样本连续往一个方向推，把别处学到的东西冲掉；随机抽一小批，就像监督学习里把数据打乱）；同一条经验可以被重复利用。
 - **Target network**：计算 target $r+\gamma\max_{a'}Q_{\theta^-}(s',a')$ 时用一份**暂时冻结**的旧参数 $\theta^-$，每隔若干步才同步成最新参数。好处：target 不会随着每一步更新一起移动，减少“追着自己的尾巴跑”的不稳定。
 
 它们都是稳定训练的辅助机制，并不改变 Q-learning target 的含义，也不代表“网络够大就不需要探索”。
@@ -353,7 +355,7 @@ $$Y_t=R_{t+1}+\gamma\max_b\hat Q(S_{t+1},b;\boldsymbol\theta),\qquad \boldsymbol
     viz: { id: 'dqn', guide: R`
 **怎么用**（概念演示，不考）：
 
-1. 点格子看前向计算：输入 $(x/3,y/2)$，经过两个隐藏层，输出四个 Q 值；最大的那个就是贪心动作。
+1. 点格子看前向计算：输入 $(x/3,y/2)$，经过两个隐藏层，输出四个 Q 值；最大的那个就是贪心动作。隐藏层小圆点：紫 = 正激活，橙 = 负激活，越大表示绝对值越大（每层只画了一部分神经元）。
 2. 训练 3000 步，看“所有 Q 与 q* 的 RMSE”下降（RMSE = 所有非终止 (s,a) 上“预测 − 最优值”平方的平均再开根号，越小说明网络的 Q 越接近最优 Q；它不是这一轮拿到的奖励），格子里的 Q 越来越接近 VI 算出的 $q_*$。
 3. 关掉 replay buffer 或 target network 再训练，比较稳定性（小问题上差别可能不大，这正说明它们是为复杂问题准备的工程技巧）。紫色标出本步从 buffer 中抽中的经验。` },
     compare: R`

@@ -55,7 +55,7 @@
       st.text('genl', FW + 70, BASE + 62, '没访问过 s₆，它也变了', { size: 12, color: PAL.gold, op: 0 });
 
       const T = R`\htmlClass{fx-w}{\mathbf w}\leftarrow\htmlClass{fx-w}{\mathbf w}+\htmlClass{fx-alpha}{\alpha}\,\htmlClass{fx-delta}{\delta}\,\htmlClass{fx-x}{\mathbf x(s)},\qquad \htmlClass{fx-delta}{\delta}=\htmlClass{fx-target}{Y}-\htmlClass{fx-V}{\hat V(s;\mathbf w)}`;
-      const frames = [{ cap: '**只更新了一个状态，为什么别的状态也跟着变？** 每个状态不再有自己的格子，而是用两个特征 $x_1,x_2$ 描述，所有状态**共用**同一组权重 $\\mathbf w$。现在 $\\mathbf w=(0,0)$，所有预测都是 0。' }];
+      const frames = [{ cap: '**只更新了一个状态，为什么别的状态也跟着变？** 每个状态不再有自己的格子，而是用两个特征描述（课件 Method 1）：$x_1$ = 到 +1 终点 $s_{11}$ 的曼哈顿距离 ÷5，$x_2$ = 到 −1 终点 $s_7$ 的距离 ÷5。$s_{10}$ 离 $s_{11}$ 1 步、离 $s_7$ 2 步，所以 $\\mathbf x(s_{10})=(\\tfrac15,\\tfrac25)$；$s_6$ 正好反过来。所有状态**共用**同一组权重 $\\mathbf w$。现在 $\\mathbf w=(0,0)$，所有预测都是 0。' }];
       frames.push({ set: { 'tgt.op': 1, 'tgtl.op': 1, 'dl.op': 1 }, dur: 1100, hl: ['target', 'delta'], pulse: ['v10n'],
         cap: '在 $s_{10}$ 选 Right 进入终止格，得 $+1$：target $Y=1$，预测 $\\hat V(s_{10})=0$，误差 $\\delta=1$（红箭头）。' });
       const shrink = i => ({ ['mv' + i + '.op']: 1, ['mv' + i + '.y']: BASE - fx(alpha * delta * x10[i]), ['mv' + i + '.height']: fx(alpha * delta * x10[i]) });
@@ -97,20 +97,20 @@
     st.text('pt', PX + PW / 2, PY - 30, 'softmax 概率 π(a) —— 两段加起来是 1', { size: 13, color: PAL.dim });
     labels.forEach((lab, i) => {
       const x = BX + i * 120;
-      st.add('hb' + i, 'rect', { x: x - BW / 2, y: BASE, width: BW, height: 0, fill: i ? PAL.orange : PAL.gold, 'fill-opacity': 0.85, rx: 3 });
+      st.add('hb' + i, 'rect', { x: x - BW / 2, y: BASE, width: BW, height: 0, fill: PAL.orange, 'fill-opacity': i ? 0.5 : 0.85, rx: 3 });
       st.text('hl' + i, x, 60, lab, { size: 14, weight: 650 });
-      st.num('hn' + i, x, 80, 0, { digits: scale > 3 ? 4 : 3, trim: true, size: 13, weight: 650, color: i ? PAL.orange : PAL.gold, prefix: 'h = ' });
+      st.num('hn' + i, x, 80, 0, { digits: scale > 3 ? 4 : 3, trim: true, size: 13, weight: 650, color: PAL.orange, prefix: 'h = ' });
       st.add('sc' + i, 'path', { d: util.arrow(x + BW / 2 + 16, BASE, x + BW / 2 + 16, BASE - 1, 7), stroke: PAL.red, 'stroke-width': 2.5, fill: 'none', op: 0 });
       st.text('scl' + i, x + BW / 2 + 24, BASE + 16, '', { size: 11, color: PAL.red, anchor: 'start' });
     });
-    st.add('pb0', 'rect', { x: PX, y: PY - 12, width: PW / 2, height: 24, fill: PAL.gold, rx: 3 });
-    st.add('pb1', 'rect', { x: PX + PW / 2, y: PY - 12, width: PW / 2, height: 24, fill: PAL.orange, rx: 3 });
-    st.num('pn0', PX + 70, PY + 28, 0.5, { digits: 5, trim: true, size: 13, color: PAL.gold, weight: 700, prefix: 'π(' + labels[0] + ') = ' });
-    st.num('pn1', PX + PW - 70, PY + 28, 0.5, { digits: 5, trim: true, size: 13, color: PAL.orange, weight: 700, prefix: 'π(' + labels[1] + ') = ' });
+    st.add('pb0', 'rect', { x: PX, y: PY - 12, width: PW / 2, height: 24, fill: PAL.white, 'fill-opacity': 0.75, rx: 3 });
+    st.add('pb1', 'rect', { x: PX + PW / 2, y: PY - 12, width: PW / 2, height: 24, fill: PAL.white, 'fill-opacity': 0.35, rx: 3 });
+    st.num('pn0', PX + 70, PY + 28, 0.5, { digits: 5, trim: true, size: 13, color: PAL.white, weight: 700, prefix: 'π(' + labels[0] + ') = ' });
+    st.num('pn1', PX + PW - 70, PY + 28, 0.5, { digits: 5, trim: true, size: 13, color: PAL.white, weight: 700, prefix: 'π(' + labels[1] + ') = ' });
     st.text('pl0', PX - 26, PY, labels[0], { size: 13 });
     st.text('pl1', PX + PW + 26, PY, labels[1], { size: 13 });
     st.add('pick', 'path', { d: 'M -7 -9 L 7 -9 L 0 0 Z', fill: PAL.white, op: 0, tx: BX, ty: 48 });
-    st.text('scleg', 210, BASE + 112, '红箭头 = 打分 𝟙{b=Aₜ} − π（单独比例，不是偏好的刻度）', { size: 11, color: PAL.dim, op: 0 });
+    st.text('scleg', 210, BASE + 112, '红箭头 = score 𝟙{b=Aₜ} − π（单独比例，不是偏好的刻度）', { size: 11, color: PAL.dim, op: 0 });
     st.text('note', 560, 120, '', { size: 13, color: PAL.dim });
 
     let h = [0, 0], frames = [];
@@ -133,12 +133,12 @@
         set: util.merge({ 'pick.op': 1, 'pick.tx': bx(sp.chosen), 'scleg.op': 1, 'note.text': sp.note || '' },
           util.each(2, b => ({ ['sc' + b + '.op']: 1, ['scl' + b + '.op']: 1, ['sc' + b + '.d']: util.arrow(bx(b) + BW / 2 + 16, BASE - hb(h[b]), bx(b) + BW / 2 + 16, BASE - hb(h[b]) - score[b] * 70, 7), ['scl' + b + '.text']: (score[b] >= 0 ? '+' : '−') + util.fmt(Math.abs(score[b]), 5), ['scl' + b + '.y']: BASE - hb(h[b]) - score[b] * 70 + (score[b] >= 0 ? 6 : -6) }))),
         dur: 1100, hl: ['score', 'G'],
-        cap: sp.cap1 || ('选中 ' + labels[sp.chosen] + '，$G=' + sp.G + '$。打分 $\\mathbb 1\\{b=A_t\\}-\\pi$：被选的 $+' + util.fmt(score[sp.chosen], 5) + '$，另一个 $' + util.fmt(score[1 - sp.chosen], 5) + '$——两者相加为 0。')
+        cap: sp.cap1 || ('选中 ' + labels[sp.chosen] + '，$G=' + sp.G + '$。score $\\mathbb 1\\{b=A_t\\}-\\pi$（就是 $\\partial\\log\\pi(A_t)/\\partial h(b)$，告诉每个偏好该往哪边改）：被选的 $+' + util.fmt(score[sp.chosen], 5) + '$，另一个 $' + util.fmt(score[1 - sp.chosen], 5) + '$——两者相加为 0。')
       });
       frames.push({
         set: util.merge(util.each(2, b => ({ ['hb' + b + '.y']: BASE - Math.max(0, hb(hn[b])), ['hb' + b + '.height']: Math.abs(hb(hn[b])), ['hn' + b + '.num']: hn[b], ['sc' + b + '.op']: 0.25, ['scl' + b + '.op']: 0.25 }))),
         dur: 1100, hl: ['alpha', 'h'], pulse: ['hb0', 'hb1'], tex: T,
-        cap: sp.cap2 || ('乘上 $\\alpha G=' + util.fmt(sp.alpha * sp.G, 2) + '$ 加到偏好上：$h=(' + util.fmt(hn[0], 4) + ',\\ ' + util.fmt(hn[1], 4) + ')$。注意改的是**偏好**，不是概率。')
+        cap: sp.cap2 || ('乘上 $\\alpha G=' + util.fmt(sp.alpha * sp.G, 2) + '$（这一步 $t=0$，$\\gamma^t=1$）加到偏好上：$h=(' + util.fmt(hn[0], 4) + ',\\ ' + util.fmt(hn[1], 4) + ')$。注意改的是**偏好**，不是概率。')
       });
       frames.push({
         set: { 'pb0.width': PW * pn[0], 'pb1.x': PX + PW * pn[0], 'pb1.width': PW * pn[1], 'pn0.num': pn[0], 'pn1.num': pn[1], 'pick.op': 0 },
@@ -160,22 +160,22 @@
       return pgScene(st, ['Left', 'Right'], {
         intro: '**这次选 Right 拿到了正回报，policy 该怎么改？** 上面是两个动作的**偏好** $h$（可正可负），下面的长条是 softmax 后的概率。一开始偏好相同，概率各 0.5。',
         list: [{ chosen: 1, G: p.G, alpha: 0.1 }],
-        outro: p.G > 0 ? '回报为正：被选的动作变得更可能。$G$ 越大推得越远；$G<0$ 就往反方向推，$G=0$ 不动——这个版本没有基线，所以回报的大小直接决定步长。'
+        outro: p.G > 0 ? '回报为正：被选的动作变得更可能。$G$ 越大推得越远；$G<0$ 就往反方向推，$G=0$ 不动——这个版本没有减基线（baseline：从回报里统一减掉的参照值），所以回报的大小直接决定步长。'
           : p.G < 0 ? '回报为负：被选的 Right 反而变得**更不可能**，概率流向没被选的 Left。' : '$G=0$：完全不更新。'
       }, 0.3);
     }
   });
   RL.scene.register('softmax-saturate', {
     title: '大回报让 softmax 一步饱和（机器人例子）',
-    intro: '课件 W10-2：动作 A 回报 101，B 回报 99，$\\alpha=0.1$，从 $h=[0,0]$ 开始。',
+    intro: '课件 W10-2：动作 A 回报 101，B 回报 99，$\\alpha=0.1$，从 $h=[0,0]$ 开始。橙色柱 = 两个动作的偏好 $h$，白色长条 = softmax 概率。',
     w: 720, h: 372,
     colors: { h: PAL.orange, alpha: PAL.purple, G: PAL.gold, score: PAL.red },
     build(st) {
       return pgScene(st, ['A', 'B'], {
-        intro: '**两个动作都很好（101 和 99），REINFORCE 能稳稳地学会偏向 A 吗？** 看看不减基线时会发生什么。',
+        intro: '**两个动作都很好（101 和 99），REINFORCE 能稳稳地学会偏向 A 吗？** 看看不减基线（baseline：从回报里统一减掉的参照值）时会发生什么。',
         list: [
-          { chosen: 1, G: 99, alpha: 0.1, note: 'E1：采样到 B', cap2: 'E1 选到 B，$G=99$：$\\Delta h=0.1\\times99\\times(\\mp0.5)=\\mp4.95$，一步就把偏好推到 $(-4.95,\\ +4.95)$。' },
-          { preH: [-4.9969, 4.9969], preNote: 'E2–E100：都采样到 B', preCap: 'E2 到 E100 按 policy 采样，几乎全是 B；每次的打分只有 $\\pm0.00005$ 左右，偏好只从 $\\pm4.95$ 慢慢漂到 $\\pm4.9969$（课件的数）。', chosen: 0, G: 101, alpha: 0.1, note: 'E101：强制选 A', cap1: 'E101 强制选 A：打分是 $(+0.99995,\\ -0.99995)$——A 的概率太小，所以它的打分接近 1。', cap2: '$\\Delta h=0.1\\times101\\times(\\pm0.99995)\\approx\\pm10.1$：偏好一下子翻到另一边。' }
+          { chosen: 1, G: 99, alpha: 0.1, note: 'E1：采样到 B', cap2: 'E1 选到 B，$G=99$（一步 episode，$t=0$，$\\gamma^0=1$）：$\\Delta h=0.1\\times99\\times(\\mp0.5)=\\mp4.95$，一步就把偏好推到 $(-4.95,\\ +4.95)$。' },
+          { preH: [-4.9969, 4.9969], preNote: 'E2–E100：都采样到 B', preCap: 'E2 到 E100 按 policy 采样，几乎全是 B；每次的 score 只有 $\\pm0.00005$ 左右，偏好只从 $\\pm4.95$ 慢慢漂到 $\\pm4.9969$（课件的数）。', chosen: 0, G: 101, alpha: 0.1, note: 'E101：强制选 A', cap1: 'E101 强制选 A：score 是 $(+0.99995,\\ -0.99995)$——A 的概率太小，所以它的 score 接近 1。', cap2: '$\\Delta h=0.1\\times101\\times(\\pm0.99995)\\approx\\pm10.1$：偏好一下子翻到另一边。' }
         ],
         outro: '一次 B 就让 $\\pi(A)$ 掉到 0.00005，一次 A 又让它跳到 0.99996：**回报的绝对值太大，每一步都把 softmax 推进饱和区**。两个动作明明差不多好，policy 却来回翻。这就是要减去基线（第 30 章）的原因。'
       }, 6);
@@ -185,7 +185,7 @@
   /* ------------------------------------------------------------------ UCB bonus shrinking (c14) */
   RL.scene.register('ucb-bonus', {
     title: 'UCB：没把握的选项先加分',
-    intro: '本章的算例：$c=1$，$t=100$；A：$Q=0.6,N=80$；B：$Q=0.5,N=5$。青 = 估计 $Q$，黄框 = 不确定性加分。',
+    intro: '本章的算例：$c=1$，$t=100$；A：$Q=0.6,N=80$；B：$Q=0.5,N=5$（另外 15 次拉的是其他机器）。青 = 估计 $Q$，黄框 = 不确定性加分。',
     w: 720, h: 330,
     colors: { Q: PAL.teal, bonus: PAL.yellow, N: PAL.white },
     build(st) {
@@ -226,7 +226,7 @@
             ? '又试了几次之后，B 的加分缩到 ' + f(s.bB) + '，分数 ' + f(s.uB) + ' 终于低于 A 的 ' + f(s.uA) + '：**轮回 A**。A 的加分其实在慢慢涨（$\\ln t$ 在变大），没被选的臂迟早会再被试一次。'
             : '一直选 B（假设它的平均奖励保持 0.5）：$N_B=' + nb + '$，加分缩到 ' + f(s.bB) + '，分数 ' + f(s.uB) + '；A 没被选，$t$ 变大让它的加分略涨到 ' + f(s.bA) + '。' });
       });
-      frames.push({ cap: '**面对不确定性保持乐观**：试得少 → 加分大 → 被选 → 加分变小。$\\ln t$ 一直在涨，所以没被选的臂迟早会再被试一次——探索越来越稀疏，但**永远不会完全停止**（差的臂只被试 $O(\\ln t)$ 次）。MCTS 的 tree policy（UCT）就是在树的每个节点上做这件事。' });
+      frames.push({ cap: '**面对不确定性保持乐观**：试得少 → 加分大 → 被选 → 加分变小。$\\ln t$ 一直在涨，所以没被选的臂迟早会再被试一次——探索越来越稀疏，但**永远不会完全停止**（差的臂只被试 $O(\\ln t)$ 次）。后面的树搜索（MCTS）会在树的每个节点上重复这条规则。' });
       return frames;
     }
   });
@@ -308,7 +308,7 @@
       const best = () => 'RLUD'.split('').reduce((b, a) => ucb(a) > ucb(b) ? a : b, 'R');
       let b5 = best();
       frames.push({ set: util.merge(phaseSet(0), ucbSet(), { 'iter.text': '迭代 5', 'gtxt.text': 'ln N(s₁₀) = ln 4 = 1.386，每个动作加分 √2·√(1.386/1) = 1.665' }, { 'hlpath.op': 1, 'hlpath.d': 'M ' + RT.x + ' ' + RT.y + ' L ' + kids[b5].x + ' ' + kids[b5].y }),
-        dur: 1200, pulse: ['ucb' + b5], tex: UCBT, cap: '**迭代 5**：四个动作都试过了，开始用 UCB **选择**。加分都一样（都只试过 1 次），所以 Q 最大的 Right 胜出（UCB ' + util.fmt(ucb(b5), 4) + '）。' });
+        dur: 1200, pulse: ['ucb' + b5], tex: UCBT, cap: '**迭代 5**：四个动作都试过了，开始用 UCB **选择**。它和 bandit 的 UCB 是同一个式子，只是把总次数 $t$ 换成这个节点的访问次数 $N(s)$。加分都一样（都只试过 1 次），所以 Q 最大的 Right 胜出（UCB ' + util.fmt(ucb(b5), 4) + '）。' });
       Q.R = Q.R + (1 - Q.R) / 2; N.R = 2; Nroot += 1;
       frames.push({ set: util.merge(phaseSet(3), qLabel('R'), { 'rootn.num': Nroot, 'gtxt.text': '到达已在树里的终止节点：R = 1，Q = 1 + (1 − 1)/2 = 1' }), dur: 1000, pulse: ['eqR'],
         cap: 'Right 又进入 $s_{11}$：这个子节点已经在树里而且是终止状态，所以没有扩展、没有模拟，直接回传 $R=1$：$Q=1$，$N=2$。' });
@@ -331,7 +331,7 @@
 
   /* ------------------------------------------------------------------ process strips */
   RL.scene.setStages('linear-update', ['共用一组权重', '误差 $\\delta$', '$\\mathbf w$ 沿 $\\mathbf x$ 方向改', '$s_{10}$ 变了', '$s_6$ 也变了'], [0, 1, 2, 2, 3, 4]);
-  RL.scene.setStages('softmax-pg', ['偏好与概率', '打分 $\\mathbb 1\\{b=A_t\\}-\\pi$', '改偏好 $h$', '重新 softmax', '结论'], [0, 1, 2, 3, 4]);
+  RL.scene.setStages('softmax-pg', ['偏好与概率', 'score $\\mathbb 1\\{b=A_t\\}-\\pi$', '改偏好 $h$', '重新 softmax', '结论'], [0, 1, 2, 3, 4]);
   RL.scene.setStages('softmax-saturate', ['开始', 'E1：选到 B', 'E2–E100', 'E101：强制选 A', '结论'], [0, 1, 1, 1, 2, 3, 3, 3, 4]);
   RL.scene.setStages('ucb-bonus', ['只看估计值', '加上不确定性加分', '反复试 B', '轮到 A', '结论'], [0, 1, 2, 2, 3, 4]);
   RL.scene.setStages('mcts-steps', ['迭代 1–4：每个动作先试一次', '迭代 5：开始用 UCB 选', '迭代 6：树往深处长', '结论'], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 2, 2, 3]);

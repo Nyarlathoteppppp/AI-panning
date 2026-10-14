@@ -133,7 +133,7 @@ $$G^{(0.5)}_t=0.5\times0.72+0.25\times0.648+0.25\times0.81=0.7245$$
 
 若 $V(S_t)=0.2$、$\alpha=0.1$：$0.2+0.1(0.7245-0.2)=0.25245$。
 
-**课件 Gridworld 的 1/2/3/6-step 例子**（α=0.1，episode $s_1\to s_5\to s_8\to s_9\to s_{10}\to s_{11}$，初始 Q=0）：1-step 只更新最后一格（0.1）；2-step 让 $s_9$ 也得到 $0.1\times0.9=0.09$；3-step 让 $s_8$ 得到 $0.1\times0.81=0.081$；6-step 已经覆盖整条 episode（等同 MC），起点也得到更新。n 越大，一条 episode 能把终点奖励传回得越远。
+**课件 Gridworld 的 1/2/3/6-step 例子**（α=0.1，episode $s_1\to s_5\to s_8\to s_9\to s_{10}\to s_{11}$，初始 Q=0；课件把同样的 n-step target 用在动作价值上：$Q(S_t,A_t)\leftarrow Q+\alpha[G^{(n)}_t-Q]$，bootstrap 项换成 $\gamma^nQ(S_{t+n},A_{t+n})$，n 步内终止就没有这一项）：1-step 只更新最后一格（0.1）；2-step 让 $s_9$ 也得到 $0.1\times0.9=0.09$；3-step 让 $s_8$ 得到 $0.1\times0.81=0.081$；6-step 已经覆盖整条 episode（等同 MC），起点也得到更新。n 越大，一条 episode 能把终点奖励传回得越远。
 `,
     viz: { id: 'nstep', guide: R`
 **怎么用**：轨迹固定为课件 Episode 1。
@@ -175,6 +175,8 @@ $$G^{(0.5)}_t=0.5\times0.72+0.25\times0.648+0.25\times0.81=0.7245$$
 **SARSA：on-policy TD control**——用训练 policy $\pi'$ 采样的下一动作来 bootstrap。
 
 **伪代码（W8-2 slide 36）**
+
+记号提醒：本节的 $\pi'$ 只是“训练时用来选动作的 policy”（课件记号），通常是 ε-greedy；它和 policy improvement 里“改进后的贪心 policy $\pi'$”不是一回事。
 
 ${'```'}text
 初始化 Q(s,a)。选 α、γ，以及基于 Q 的探索性训练 policy π'（如 ε-greedy）
@@ -228,9 +230,9 @@ $$Q(S,A)\leftarrow0.5+0.1\times(0.36-0.5)=0.486$$
     viz: { id: 'qlearn', props: { algo: 'sarsa' }, title: 'SARSA in GridWorld：A′ 先抽样、进入 target、再执行', guide: R`
 **怎么用**：
 
-1. 点 Next Step，看表格里的“下一动作 A′”：它被用来算 target，下一步智能体真的执行它。
-2. 遇到 A′ 是“（探索）”的那一步，target 会用一个较低的 Q——这就是 SARSA 把探索代价算进价值。
-3. Run 100 Episodes 后看 Q-table 和“贪心 policy 的真实价值”（网站后台用已知模型评估“每格选 Q 最大的动作”得到的真实回报，只作对照，学习算法看不到它；训练曲线则是训练时带探索的实际回报）；与第 21 章的 Q-learning 对比。` },
+1. 点**单步执行**，看表格里的“下一动作 A′”：它被用来算 target，下一步智能体真的执行它。
+2. 遇到 A′ 标着“（非贪心）”的那一步，target 用的是比 max 小的 Q——这就是 SARSA 把探索代价算进价值。（标“贪心”的一步也可能是随机分支恰好抽到了贪心动作。）
+3. 点**跑 100 条 episode** 后看 Q-table 和“贪心 policy 的真实价值”（网站后台用已知模型评估“每格选 Q 最大的动作”得到的真实回报，只作对照，学习算法看不到它；训练曲线则是训练时带探索的实际回报）；与第 21 章的 Q-learning 对比。` },
     compare: R`
 | | SARSA | Q-learning（下一章） |
 |---|---|---|
@@ -308,7 +310,9 @@ $$Y=R+\gamma\max_aQ(S',a),\qquad\delta=Y-Q(S,A),\qquad Q(S,A)\leftarrow Q(S,A)+\
 
 **撞墙时 $S'=S$**：读取和写入涉及同一行，应先用更新前的数值算完 target，再赋值。
 
-**收敛条件（了解）**：有限、平稳、折扣的 MDP；所有相关 $(s,a)$ 被充分访问；步长满足 $\sum_n\alpha_n=\infty$、$\sum_n\alpha_n^2<\infty$。换成固定步长或共享参数（W9）后，不能直接照搬同样的收敛保证。
+**为什么 max 意味着“学贪心 policy 的价值”**：贪心 policy 在 $S'$ 把概率 1 全给 Q 最大的动作，所以 $\sum_a\pi_{\text{greedy}}(a\mid S')Q(S',a)=\max_aQ(S',a)$。target 里用哪个 policy 给下一步的 Q 加权，学到的就是哪个 policy 的价值。Q-learning 的数据来自 ε-greedy（behavior policy，行为 policy：实际产生数据的那个），被评价的却是贪心 policy（target policy，目标 policy：target 里假设的那个），两者不同，所以是 off-policy。
+
+**收敛条件（了解）**：有限、平稳、折扣的 MDP；所有相关 $(s,a)$ 被充分访问；步长满足 $\sum_n\alpha_n=\infty$、$\sum_n\alpha_n^2<\infty$（前一条保证步长总和足够大，从任何初值都能走到目标；后一条保证步长最终足够小，噪声被平均掉。$1/N$ 两条都满足，常数 α 不满足后一条）。换成固定步长或共享参数（W9）后，不能直接照搬同样的收敛保证。
 `,
     formulas: [QL],
     example: R`
@@ -316,7 +320,7 @@ $$Y=R+\gamma\max_aQ(S',a),\qquad\delta=Y-Q(S,A),\qquad Q(S,A)\leftarrow Q(S,A)+\
 
 轨迹：$s_1\xrightarrow{\uparrow}s_5\xrightarrow{\uparrow}s_8\xrightarrow{\rightarrow}s_9\xrightarrow{\rightarrow}s_{10}\xrightarrow{\rightarrow,+1}s_{11}$。
 
-- 第 1–4 次更新：$Y=0+0.9\times\max_aQ(s',a)=0$，$\delta=0$，Q 不变（只有计数 $N$ 增加）。这是因为下一状态那一行的 Q 还都是初始值 0（还没学到），不是这些动作没价值。
+- 第 1–4 次更新：$Y=0+0.9\times\max_aQ(s',a)=0$，$\delta=0$，Q 不变（课件的表格另外记录每个 $(s,a)$ 的访问次数 $N$，只用于显示；α 固定时更新用不到它）。这是因为下一状态那一行的 Q 还都是初始值 0（还没学到），不是这些动作没价值。
 - 第 5 次更新 $Q(s_{10},\text{Right})$：
 $$\Delta=r(s_{10},\text{Right},s_{11})+\gamma\max_bQ(s_{11},b)-Q(s_{10},\text{Right})=1+0.9\times0-0=1$$
 $$Q(s_{10},\text{Right})\leftarrow0+0.1\times1=0.1$$
@@ -328,12 +332,12 @@ $$Q(s_{10},\text{Right})\leftarrow0+0.1\times1=0.1$$
     viz: { id: 'qlearn', props: { algo: 'qlearning' }, guide: R`
 **Q-Learning GridWorld**：
 
-- **Next Step**：执行一步，表格显示当前 state、选择的 action（贪心/探索）、reward、next state；下面三张卡片是 TD target → TD error → 更新，数轴显示移动的距离。
-- **Next Episode**：一直走到这条 episode 结束。
-- **Run 100 Episodes**：快速训练；Q-table 中 ★ 标出每行的贪心动作，“贪心 policy 的真实价值”应逐渐接近 0.5452。
-- **Reset**：清空 Q 表。点格子可以只看该状态的 Q 行。
+- **单步执行**：执行一步，表格显示当前 state、选择的 action（贪心/非贪心）、reward、next state；下面三张卡片是 TD target → TD error → 更新，数轴显示移动的距离。
+- **走完本条 episode**：一直走到这条 episode 结束。
+- **跑 100 条 episode**：快速训练；Q-table 中 ★ 标出每行的贪心动作，“贪心 policy 的真实价值”应逐渐接近 0.5452。
+- **重置**：清空 Q 表；**上一步**：退回一步。点格子可以只看该状态的 Q 行。
 
-建议：先 Reset，连点 Next Step 走完第一条 episode，确认只有进入终点的那一步改变了 Q（课件的 0.1 对应 α=0.1；这里默认 α=0.5，可以先把 α 拖到 0.1）。` },
+建议：先**重置**，连点**单步执行**走完第一条 episode，确认只有进入终点的那一步改变了 Q（课件的 0.1 对应 α=0.1；这里默认 α=0.5，可以先把 α 拖到 0.1）。` },
     compare: R`
 | | Tabular MC | SARSA | Q-learning |
 |---|---|---|---|
@@ -380,6 +384,8 @@ $$Q(s_{10},\text{Right})\leftarrow0+0.1\times1=0.1$$
 
 - On-policy：可能更稳定，但可能收敛到次优 policy（次优是相对于贪心最优而言，因为它考虑了探索）；
 - Off-policy：能收敛到最优 policy，但可能不太稳定。
+
+不稳定主要来自两点：① 训练时按 ε-greedy 走，估值却假设之后都贪心，行为经常碰到估值没算进去的风险（悬崖例子里训练回报波动大）；② max 总是挑当前估计最大的那个，估计里的噪声会被系统性地挑高。
 `,
     why: R`
 两种算法只差 target 中的一项，但学到的东西可以完全不同。判断一个算法是不是 on-policy，关键**不是**它有没有随机动作，而是“产生数据的 policy”和“被评价/优化的 policy”是否一致：可以用随机 policy on-policy 地学，也可以用随机 policy 收集数据却 off-policy 地学贪心 policy。

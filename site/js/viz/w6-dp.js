@@ -32,7 +32,7 @@
     mount(el) {
       const g = courseGrid(), hist = viHistory(g, 200);
       const sources = { v0: { label: 'V₀ = 0（全零）', V: hist[0] }, v1: { label: 'V₁（一次 VI 后）', V: hist[1] }, v2: { label: 'V₂', V: hist[2] }, vstar: { label: 'V*（收敛后）', V: hist[200] },
-        vpi0: { label: 'V^π₀（课件随机 policy）', V: dp.policyEvaluationExact(g, RL.examples.PI0) } };
+        vpi0: { label: 'V^π₀（课件随手挑的确定性 policy π₀）', V: dp.policyEvaluationExact(g, RL.examples.PI0) } };
       let src = 'v1', s = 10, a = 'E', mode = 'opt', step = 0;
       const gridBox = h('div'), steps = h('div'), ctrl = h('div.viz-row');
       const view = gridView(gridBox, g, { onCell: st => { if (!g.isTerminal(st)) { s = st; step = 0; draw(); } } });
@@ -82,7 +82,7 @@
     title: 'Policy Evaluation：固定 π，一轮一轮更新 V(s)',
     mount(el) {
       const g = courseGrid();
-      const policies = { pi0: ['课件 π₀', RL.examples.PI0], pi1: ['课件 π₁（最优）', null], uni: ['均匀随机 π(a|s)=0.25', uniformPolicy(g)], p1: ['MC 示例 policy', RL.examples.POLICY1] };
+      const policies = { pi0: ['课件 π₀', RL.examples.PI0], pi1: ['课件 π₁（最优）', null], uni: ['均匀随机 π(a|s)=0.25', uniformPolicy(g)], p1: ['课件示例 policy（W7 用）', RL.examples.POLICY1] };
       policies.pi1[1] = dp.improvePolicy(g, dp.policyEvaluationExact(g, RL.examples.PI0), RL.examples.PI0).policy;
       let key = 'pi0', V, k, deltas, history, sel = 10, showExact = false;
       const gridBox = h('div'), info = h('div'), chart = h('div');

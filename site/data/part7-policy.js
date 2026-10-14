@@ -21,7 +21,7 @@
       { key: 'lr', label: 'α', color: 'purple', text: '步长。注意是**加号**：对期望回报做梯度**上升**。' },
       { key: 'disc', label: 'γᵗ', color: 'gray', text: '把从 $t$ 开始计时的 return 放回从 0 开始的时间轴。' },
       { key: 'g', label: 'Monte Carlo return G_t', color: 'green', text: '“这个动作有多好”：用实际 return 估计 $q^{\\pi_\\theta}(S_t,A_t)$。' },
-      { key: 'grad', label: '∇ log π（policy gradient）', color: 'orange', text: '“这个动作相对其他动作的影响”：沿这个方向改参数，会让 $A_t$ 在 $S_t$ 更可能被选。' }
+      { key: 'grad', label: '∇ log π（课件叫 policy gradient，也叫 score function）', color: 'orange', text: '沿这个方向改 θ，$A_t$ 在 $S_t$ 的 log 概率上升最快。tabular 时就是 $\\mathbb 1\\{b=A_t\\}-\\pi(b\\mid S_t)$。注意它不是 $\\nabla J$：$\\nabla J$ 是 $\\gamma^tG_t\\nabla\\log\\pi$ 的期望。' }
     ]
   };
   root.RL.content.add([
@@ -52,11 +52,11 @@
     intuition: R`
 **例 1：多人石头剪刀布（no best action — multi-player）**
 
-剪刀赢布、布赢石头、石头赢剪刀。确定性 policy（比如总出石头）有一个固定的克制策略（总出布）；**均匀随机**地出三者是最优的（Nash 均衡）。注意这里有会思考的对手，已经不是“转移规律固定”的单智能体 MDP。
+剪刀赢布、布赢石头、石头赢剪刀。确定性 policy（比如总出石头）有一个固定的克制策略（总出布）；**均匀随机**地出三者是最优的（Nash 均衡（纳什均衡）：任何一方单独改变自己的策略都占不到便宜；只要你偏向某一手，对手就能专门克制它）。注意这里有会思考的对手，已经不是“转移规律固定”的单智能体 MDP。
 
 **例 2：Aliased Gridworld（no best action — partially observed）**
 
-上排五格 w1、g1、w2、g2、w3；w1 和 w3 下方是骷髅（−1），w2 下方是钱袋（+1）。智能体**分不清两个灰格**（它们看起来一样），所以 policy 在两个灰格上必须相同。动作是确定性的。
+上排五格 w1、g1、w2、g2、w3；w1 和 w3 下方是骷髅（−1），w2 下方是钱袋（+1）。智能体**分不清两个灰格**（它们看起来一样），所以 policy 在两个灰格上必须相同。动作是确定性的：四个动作 Up / Down / Left / Right；向上、出界、灰格向下都原地不动；w1、w3 向下掉进骷髅（−1，终止），w2 向下拿到钱袋（+1，终止）。
 
 - 最好的确定性 policy：两个灰格都向右（或都向左）。无论哪种，**总有一个灰格会卡住**，永远到不了钱袋：都向右时，g2 → w3，而 w3 必须向左回到 g2，于是 g2 ↔ w3 永远来回。
 - 最优的随机 policy：$\pi(\text{Right}\mid\text{grey})=0.5$，$\pi(\text{Left}\mid\text{grey})=0.5$。它能以很高的概率在几步之内到达目标。
@@ -68,13 +68,13 @@
 
 | 起点 | 轨迹 | 折扣回报 |
 |---|---|---|
-| w1 | w1 → g1 → w2 ↓ $ | $0+0.9\times0+0.81\times1=0.81$ |
-| g1 | g1 → w2 ↓ $ | $0.9$ |
-| w2 | w2 ↓ $ | $1$ |
+| w1 | w1 → g1 → w2 ↓ 钱袋 | $0+0.9\times0+0.81\times1=0.81$ |
+| g1 | g1 → w2 ↓ 钱袋 | $0.9$ |
+| w2 | w2 ↓ 钱袋 | $1$ |
 | g2 | g2 → w3 ← g2 → w3 …（循环） | 0 |
 | w3 | w3 ← g2 → w3 …（循环） | 0 |
 
-平均 $J=(0.81+0.9+1+0+0)/5=0.542$；100 步内到达 $ 的概率 $=3/5=0.6$。这正是课件曲线中“Best deterministic policy”的两条虚线（≈0.54 与 0.6）。随机 0.5/0.5 时循环会被打破：到达率 → 1，平均回报 ≈ 0.77（课件中 “Balanced stochastic reference”）。
+平均 $J=(0.81+0.9+1+0+0)/5=0.542$；100 步内到达钱袋的概率 $=3/5=0.6$。这正是课件曲线中“Best deterministic policy”的两条虚线（≈0.54 与 0.6）。随机 0.5/0.5 时循环会被打破：到达率 → 1，平均回报 ≈ 0.77（课件中 “Balanced stochastic reference”）。验算（w1 →、w2 ↓、w3 ← 不变，灰格各 0.5）：由对称性 $V(g_1)=V(g_2)=v_g$，$V(w_1)=V(w_3)=0.9v_g$，$V(w_2)=1$；灰格一半走向 w1/w3、一半走向 w2：$v_g=0.5\times0.9\times0.9v_g+0.5\times0.9\times1$，解得 $v_g\approx0.756$，$V(w_1)\approx0.681$；平均 $(2\times0.681+2\times0.756+1)/5\approx0.775$。
 
 **训练时的探索 vs 交付的随机 policy**：ε-greedy 的随机性常常只是为了收集数据，评价时可以换成贪心；这里随机性是**最终方案的一部分**。不能把 REINFORCE 学到的分布最后随手换成 argmax——换了就是另一个 policy，在灰格例子里会重新陷入循环。
 `,
@@ -83,13 +83,13 @@
       latex: R`\htmlClass{fx-vb}{\pi(s)=\arg\max_aQ(s,a)}\qquad\text{vs}\qquad \htmlClass{fx-pb}{\pi_{\boldsymbol\theta}(a\mid s)=\frac{e^{h(s,a;\boldsymbol\theta)}}{\sum_be^{h(s,b;\boldsymbol\theta)}}}`,
       parts: [
         { key: 'vb', label: 'Value-based：从价值导出（确定性）', color: 'blue', text: '先学 Q，再在每个状态取最大。本课的做法需要枚举/比较所有动作，得到确定性的贪心 policy（连续动作需要另外求最大值，本课不讲）。' },
-        { key: 'pb', label: 'Policy-based：直接参数化（可以随机）', color: 'orange', text: '直接学一组参数决定动作分布。可以学出 0.5/0.5 这样的随机 policy；连续动作也可以换成连续分布（本课不展开）。' }
+        { key: 'pb', label: 'Policy-based：直接参数化（可以随机）', color: 'orange', text: '直接学一组参数决定动作分布。$h(s,a;\\boldsymbol\\theta)$ 是参数算出的动作“偏好分”，只用来比较动作，本身不是价值（下一章细讲）。可以学出 0.5/0.5 这样的随机 policy；连续动作也可以换成连续分布（本课不展开）。' }
       ]
     }],
     example: R`
 **课件的实验结果（W10 slides 17–22；以下设置与数值读自课件的实验图及图注：50,000 次训练转移，30 个种子，γ=0.9，起点均匀分布在五个格子，softmax 温度 T=1）**
 
-| | 100 步内到达 $ 的概率 | 平均折扣回报 |
+| | 100 步内到达钱袋的概率 | 平均折扣回报 |
 |---|---|---|
 | Q-learning（贪心 policy） | ≈0.6（= 最好的确定性 policy） | ≈0.54 |
 | REINFORCE（按学到的分布采样） | ≈1.0 | ≈0.77（接近平衡随机 policy） |
@@ -159,7 +159,7 @@ $$h(S_t,b)\leftarrow h(S_t,b)+\alpha\gamma^tG_t\big[\mathbb 1\{b=A_t\}-\pi(b\mid
 - $G_t>0$：提高被选动作的偏好，降低其他动作；$G_t<0$：反过来。
 `,
     why: R`
-要学一个随机 policy，最直接的办法是给每个动作一个“打分”，再用 softmax 变成概率。REINFORCE 回答了“分数怎么学”：**这次选的动作之后回报高，就让它在这个状态更可能被选**。
+要学一个随机 policy，最直接的办法是给每个动作一个“偏好分” $h$，再用 softmax 变成概率。REINFORCE 回答了“偏好分怎么学”：**这次选的动作之后回报高，就让它在这个状态更可能被选**。
 
 它是 Monte Carlo 方法：需要完整 episode 的 return，不 bootstrap，没有 $Y-Q$ 形式的 TD error——return 直接缩放更新方向。
 `,
@@ -177,7 +177,9 @@ $$h(S_t,b)\leftarrow h(S_t,b)+\alpha\gamma^tG_t\big[\mathbb 1\{b=A_t\}-\pi(b\mid
 
 $$\frac{\partial\log\pi(a\mid s)}{\partial h(s,c)}=\mathbb 1\{c=a\}-\pi(c\mid s)$$
 
-乘上 $\alpha\gamma^tG_t$ 就得到 tabular 更新（课件 slide 27：“effectively, we update for all actions”）。
+这个导数常叫 score（score function，得分函数）。乘上 $\alpha\gamma^tG_t$ 就得到 tabular 更新（课件 slide 27：“effectively, we update for all actions”）。
+
+**为什么对 $\log\pi$ 求导、再乘 $G_t$**：$\partial\log\pi/\partial h=(\partial\pi/\partial h)/\pi$。分子是“让这个动作更可能”的方向；除以 $\pi$，是因为常被选的动作会被抽到更多次——不除的话，它光凭“被抽得多”就会被反复强化。除以 $\pi$ 之后，平均下来每个动作被推动的力度只取决于它之后的回报：$\sum_a\pi(a)\,q(a)\,\frac{\nabla\pi(a)}{\pi(a)}=\sum_aq(a)\nabla\pi(a)$，这正是期望回报 $\sum_a\pi(a)q(a)$ 上升最快的方向。乘 $G_t$ 就是用这一次实际得到的回报代替 $q$（下一章的 Policy Gradient Theorem 把这件事推广到整条轨迹）。
 
 **Return 的计算**：episode 结束后可以从末尾令 $G=0$，倒序 $G\leftarrow R_{t+1}+\gamma G$ 存下所有 $G_t$，再按时间正序处理各时刻。**不要每条 episode 都把 h 清零**——h 只在训练开始时初始化一次。
 
@@ -278,7 +280,7 @@ $$\nabla_{\boldsymbol\theta}J(\boldsymbol\theta)=\mathbb E_{\pi_\theta}\big[q^{\
 “实际上，tabular REINFORCE 是 REINFORCE 的特例：每个特征是一个状态—动作对的 one-hot 编码。”
 `,
     intuition: R`
-- **Policy gradient** $\nabla\log\pi_\theta(A_t\mid S_t)$：这个动作相对其他动作的影响方向；
+- **Policy gradient** $\nabla\log\pi_\theta(A_t\mid S_t)$：沿这个方向改 θ，$A_t$ 在 $S_t$ 的 log 概率上升最快。（术语：课件把 $\nabla_\theta\log\pi_\theta$ 叫 policy gradient，更通用的名字是 score function，tabular 版就是上一章的 $\mathbb 1\{b=A_t\}-\pi$；真正的“policy 的梯度”是 $\nabla J(\theta)$，它等于 $\gamma^tG_t\nabla\log\pi$ 的期望。）
 - **Monte Carlo return** $G_t$：这个动作有多好。
 
 直觉：return 为正，就提高被选动作的概率；为负则降低。
@@ -292,10 +294,14 @@ $$\nabla_{\boldsymbol\theta}J(\boldsymbol\theta)=\mathbb E_{\pi_\theta}\big[q^{\
 :::
 `,
     math: R`
-**从期望回报到采样梯度（推导概要）**：$J(\theta)=\mathbb E_{\pi_\theta}[G_0]=\sum_\tau p_\theta(\tau)G_0(\tau)$，$\tau$ 是一整条轨迹，$p_\theta(\tau)$ 是它在当前 policy 下出现的概率。用 **log 技巧** $\nabla p=p\nabla\log p$——它只是链式法则：对 $p>0$，$\nabla\log p=\frac1p\nabla p$，两边乘 $p$ 即得。这一步只是改写概率的导数，优化目标仍然是 $\mathbb E[G_0]$，不是对数回报：
-$$\nabla J=\sum_\tau p_\theta(\tau)\,\nabla\log p_\theta(\tau)\,G_0(\tau),\qquad \nabla\log p_\theta(\tau)=\sum_t\nabla\log\pi_\theta(A_t\mid S_t)$$
+**从期望回报到采样梯度（推导概要）**：$J(\theta)=\mathbb E_{\pi_\theta}[G_0]=\sum_\tau p_\theta(\tau)G_0(\tau)$，$\tau$ 是一整条轨迹，$p_\theta(\tau)$ 是它在当前 policy 下出现的概率。用 **log 技巧** $\nabla p=p\nabla\log p$——它只是链式法则：对 $p>0$，$\nabla\log p=\frac1p\nabla p$，两边乘 $p$ 即得。这一步只是改写概率的导数，优化目标仍然是 $\mathbb E[G_0]$，不是对数回报。
+
+先对 θ 求导：$\nabla J=\sum_\tau\nabla p_\theta(\tau)\,G_0(\tau)$——一条轨迹一旦固定，它的回报就固定了，θ 只影响它出现的概率。这个和不是按 $p$ 加权的，没法用样本平均估计；用 log 技巧换掉 $\nabla p$，就变成按 $p$ 加权的和，也就是期望，可以用按当前 policy 采到的轨迹求平均：
+$$\nabla J=\sum_\tau p_\theta(\tau)\,\nabla\log p_\theta(\tau)\,G_0(\tau)=\mathbb E_\tau\big[\nabla\log p_\theta(\tau)\,G_0(\tau)\big]$$
+轨迹概率是每一步概率的连乘 $p_\theta(\tau)=p(s_0)\prod_t\pi_\theta(A_t\mid S_t)\,p(S_{t+1}\mid S_t,A_t)$，取 log 后连乘变成求和：
+$$\nabla\log p_\theta(\tau)=\sum_t\nabla\log\pi_\theta(A_t\mid S_t)$$
 （$p(s_0)$ 和 $p(s'\mid s,a)$ 不依赖 θ，求导后消失。）下一步去掉“过去的奖励”。把 $G_0$ 拆成 $C_t+\gamma^tG_t$，$C_t=R_1+\gamma R_2+\dots+\gamma^{t-1}R_t$ 是时刻 $t$ 之前已经拿到的奖励。记 $g_t=\nabla\log\pi_\theta(A_t\mid S_t)$。在 $A_t$ 被选出之前，$C_t$ 和 $S_t$ 都已经确定，而 $A_t$ 按 $\pi_\theta(\cdot\mid S_t)$ 抽样，所以
-$$\mathbb E[g_t\mid\text{过去}]=\sum_a\pi_\theta(a\mid S_t)\nabla\log\pi_\theta(a\mid S_t)=\sum_a\nabla\pi_\theta(a\mid S_t)=\nabla\sum_a\pi_\theta(a\mid S_t)=\nabla1=0,$$
+$$\begin{aligned}\mathbb E[g_t\mid\text{过去}]&=\sum_a\pi_\theta(a\mid S_t)\nabla\log\pi_\theta(a\mid S_t)=\sum_a\nabla\pi_\theta(a\mid S_t)\\&=\nabla\sum_a\pi_\theta(a\mid S_t)=\nabla1=0,\end{aligned}$$
 因此 $\mathbb E[C_t\,g_t]=0$：过去的奖励乘上这一步的 score，平均为 0。只剩 $\gamma^tG_t$，得到 discounted episodic 形式：
 $$\nabla_\theta J(\theta)=\mathbb E\Big[\sum_{t=0}^{T-1}\gamma^tG_t\nabla_\theta\log\pi_\theta(A_t\mid S_t)\Big]$$
 给定 $S_t=s,A_t=a$ 时 $G_t$ 的条件期望正是 $q^{\pi_\theta}(s,a)$——这就是定理里出现 $q$ 的原因。REINFORCE 用一个样本 $G_t$ 代替它。
@@ -353,8 +359,8 @@ $$\nabla_\theta\log\pi_\theta(a\mid s)=f(s,a)-\frac{\sum_be^{\theta^\top f(s,b)}
     viz: { id: 'policygrad', guide: R`
 **怎么用**：
 
-1. 选“one-hot 特征”，θ 全为 0，选 a₁，G=1：梯度就是 $\mathbb 1\{b=a\}-\pi$，与第 27 章完全一致。
-2. 切到“线性特征（共享）”：a₃ 的特征 (1,1) 与 a₁、a₂ 都重叠。选 a₁ 更新后，看 a₃ 的概率怎样跟着变。
+1. 选“one-hot 特征”（切换时 θ 会重置为全 0），选 a₁，G=1：梯度就是 $\mathbb 1\{b=a\}-\pi$，与第 27 章完全一致。
+2. 切到“线性特征（共享）”（θ 重置为例题里的 (0.5, −0.5)）：a₃ 的特征 (1,1) 与 a₁、a₂ 都重叠。选 a₁ 更新后，看 a₃ 的概率怎样跟着变。
 3. 把 G 改成负数：梯度方向不变，更新方向反过来。` },
     compare: R`
 | 方法 | 存储/参数化的对象 | 一次经验提供什么 | 改变什么 |
