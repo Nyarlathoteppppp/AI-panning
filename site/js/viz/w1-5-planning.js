@@ -36,7 +36,7 @@
   function graphSVG(gp, st) {
     const g = st.graph || gp.g, pos = gp.pos, S = svg;
     const out = S('svg', { viewBox: '0 0 640 370', class: 'chart', style: 'max-width:640px', role: 'img', 'aria-label': '搜索图' });
-    out.appendChild(S('defs', S('marker', { id: 'arr', viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' },
+    out.appendChild(S('defs', null, S('marker', { id: 'arr', viewBox: '0 0 10 10', refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: 'auto-start-reverse' },
       S('path', { d: 'M0,0 L10,5 L0,10 z', style: 'fill:var(--muted)' }))));
     const onPath = new Set(); (st.path || []).forEach((x, i, a) => { if (i) onPath.add(a[i - 1] + '>' + x); });
     g.edges.forEach(([a, b, c]) => {

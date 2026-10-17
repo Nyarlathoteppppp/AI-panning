@@ -13,15 +13,19 @@
   function uniformPolicy(g) { const p = {}; g.nonTerminal.forEach(s => { p[s] = { N: .25, E: .25, S: .25, W: .25 }; }); return p; }
   /** Line chart: series = [{values, color, label}] */
   function lineChart(series, opts) {
-    const W = 360, H = 150, pad = 30, n = Math.max(2, ...series.map(s => s.values.length));
+    const W = 360, H = 150, pad = opts && opts.log ? 44 : 30, n = Math.max(2, ...series.map(s => s.values.length));
     const all = series.flatMap(s => s.values).filter(v => Number.isFinite(v));
     let lo = opts && opts.min != null ? opts.min : Math.min(0, ...all), hi = opts && opts.max != null ? opts.max : Math.max(1e-9, ...all);
-    if (opts && opts.log) { lo = Math.log10(Math.max(1e-8, Math.min(...all.filter(v => v > 0)))); hi = Math.log10(Math.max(...all, 1e-8)); }
+    if (opts && opts.log) {
+      const logs = all.map(v => Math.log10(Math.max(v, 1e-8)));
+      lo = Math.floor(Math.min(...logs)); hi = Math.ceil(Math.max(...logs));
+      if (hi === lo) hi = lo + 1;
+    }
     const X = i => pad + i / (n - 1) * (W - pad - 8), Y = v => { const t = opts && opts.log ? Math.log10(Math.max(v, 1e-8)) : v; return 8 + (1 - (t - lo) / ((hi - lo) || 1)) * (H - 8 - 20); };
     return svg('svg', { viewBox: '0 0 ' + W + ' ' + H, class: 'chart' },
       svg('line', { x1: pad, x2: W - 8, y1: H - 20, y2: H - 20, class: 'axis' }), svg('line', { x1: pad, x2: pad, y1: 8, y2: H - 20, class: 'axis' }),
       svg('text', { x: pad - 4, y: 14, class: 'tick', 'text-anchor': 'end', text: opts && opts.log ? '1e' + Math.round(hi) : fmt(hi, 2) }),
-      svg('text', { x: pad - 4, y: H - 22, class: 'tick', 'text-anchor': 'end', text: opts && opts.log ? '1e' + Math.round(lo) : fmt(lo, 2) }),
+      svg('text', { x: pad - 4, y: H - 22, class: 'tick', 'text-anchor': 'end', text: opts && opts.log ? (lo === -8 ? '≤' : '') + '1e' + lo : fmt(lo, 2) }),
       svg('text', { x: W - 8, y: H - 6, class: 'tick', 'text-anchor': 'end', text: (opts && opts.xlabel) || '' }),
       series.map(s => svg('polyline', { points: s.values.map((v, i) => X(i) + ',' + Y(v)).join(' '), fill: 'none', stroke: 'var(--c-' + s.color + ')', 'stroke-width': 2, 'stroke-dasharray': s.dash || null })));
   }
@@ -85,15 +89,19 @@
       const policies = { pi0: ['课件 π₀', RL.examples.PI0], pi1: ['课件 π₁（最优）', null], uni: ['均匀随机 π(a|s)=0.25', uniformPolicy(g)], p1: ['课件示例 policy（W7 用）', RL.examples.POLICY1] };
       policies.pi1[1] = dp.improvePolicy(g, dp.policyEvaluationExact(g, RL.examples.PI0), RL.examples.PI0).policy;
       let key = 'pi0', V, k, deltas, history, sel = 10, showExact = false;
-      const gridBox = h('div'), info = h('div'), chart = h('div');
+      const gridBox = h('div'), info = h('div'), chart = h('div'), displayLabel = h('p.viz-note');
+      const exactBtn = button('显示精确解（线性方程）', () => { showExact = !showExact; draw(); }, 'btn');
       const view = gridView(gridBox, g, { onCell: st => { if (!g.isTerminal(st)) { sel = st; draw(); } } });
       const seg = segmented(Object.entries(policies).map(([v, p]) => ({ value: v, label: p[0] })), key, v => { key = v; reset(); }, 'policy');
       function reset() { V = dp.zeros(g); k = 0; deltas = []; history = [V]; showExact = false; draw(); }
-      function sweep(n) { for (let i = 0; i < n; i++) { const r = dp.policyEvaluationSweep(g, V, policies[key][1]); V = r.V; k++; deltas.push(r.delta); history.push(V); if (r.delta < 1e-10) break; } draw(); }
+      function sweep(n) { showExact = false; for (let i = 0; i < n; i++) { const r = dp.policyEvaluationSweep(g, V, policies[key][1]); V = r.V; k++; deltas.push(r.delta); history.push(V); if (r.delta < 1e-10) break; } draw(); }
       function draw() {
         const pol = policies[key][1], exact = dp.policyEvaluationExact(g, pol);
         const arrows = {}; g.nonTerminal.forEach(st => { arrows[st] = typeof pol[st] === 'string' ? pol[st] : pol[st]; });
         view.update({ values: showExact ? exact : V, decimals: 4, policy: arrows, selected: sel });
+        exactBtn.textContent = showExact ? '返回迭代值 V_k' : '显示精确解（线性方程）';
+        exactBtn.setAttribute('aria-pressed', String(showExact));
+        displayLabel.textContent = showExact ? '格子当前显示：精确解 V^π。下方保留第 ' + k + ' 轮的迭代记录，便于对照。' : '格子当前显示：第 ' + k + ' 轮迭代值 V_k。';
         const prev = history[Math.max(0, history.length - 2)];
         const probs = dp.policyProbs(g, pol, sel);
         const parts = g.actions.filter(a => probs[a] > 0).map(a => ({ a, p: probs[a], d: dp.backupDetail(g, prev, sel, a) }));
@@ -121,7 +129,7 @@
         '<br>• <b>“做 1 轮”</b> = 对每个格子做一次 Bellman expectation backup：用上一轮的表，按 policy 的动作概率和 0.8/0.1/0.1 的滑动，算出新值。重复下去，数字会收敛到“精确解”。' +
         '<br>• <b>点任意格子</b>看它这一轮是怎么算出来的。' });
       el.put(explain, seg, h('div.viz-row', button('做 1 轮', () => sweep(1), 'btn primary'), button('做 10 轮', () => sweep(10), 'btn'), button('直到收敛', () => sweep(1000), 'btn'),
-        button('显示精确解（线性方程）', () => { showExact = !showExact; draw(); }, 'btn'), button('重置', reset, 'btn ghost')), gridBox,
+        exactBtn, button('重置', reset, 'btn ghost')), displayLabel, gridBox,
         h('p.muted', '“显示精确解”：格子里改为显示解线性方程（第 8 章“直觉”的方法）得到的 V^π，可与迭代结果对照。'), info, chart);
       reset();
     }

@@ -12,14 +12,16 @@
     const W = 380, H = 170, pad = 34;
     const n = Math.max(2, ...series.map(s => s.values.length));
     const all = series.flatMap(s => s.values);
-    const lo = opts.min != null ? opts.min : Math.min(...all), hi = opts.max != null ? opts.max : Math.max(...all);
+    const lo = Math.min(opts.min ?? Infinity, ...all), hi = Math.max(opts.max ?? -Infinity, ...all);
     const X = i => pad + i / (n - 1) * (W - pad - 8), Y = v => 8 + (1 - (v - lo) / ((hi - lo) || 1)) * (H - 30);
     const S = RL.dom.s;
     return S('svg', { viewBox: '0 0 ' + W + ' ' + H, class: 'chart' },
       [0, 0.5, 1].map(f => { const v = lo + f * (hi - lo); return [S('line', { x1: pad, x2: W - 8, y1: Y(v), y2: Y(v), class: 'grid' }), S('text', { x: pad - 4, y: Y(v) + 3, class: 'tick', 'text-anchor': 'end', text: fmt(v, opts.dec == null ? 1 : opts.dec) })]; }),
       S('line', { x1: pad, x2: W - 8, y1: H - 22, y2: H - 22, class: 'axis' }),
-      S('text', { x: W - 8, y: H - 6, class: 'tick', 'text-anchor': 'end', text: opts.xlabel || '' }),
-      opts.vline != null ? S('line', { x1: X(opts.vline), x2: X(opts.vline), y1: 8, y2: H - 22, stroke: 'var(--c-red)', 'stroke-dasharray': '4 3' }) : null,
+      S('text', { x: pad, y: H - 6, class: 'tick', 'text-anchor': 'start', text: '1' }),
+      S('text', { x: (pad + W - 8) / 2, y: H - 6, class: 'tick', 'text-anchor': 'middle', text: opts.xlabel || '' }),
+      S('text', { x: W - 8, y: H - 6, class: 'tick', 'text-anchor': 'end', text: String(n) }),
+      opts.vline != null && opts.vline <= n - 1 ? S('line', { x1: X(opts.vline), x2: X(opts.vline), y1: 8, y2: H - 22, stroke: 'var(--c-red)', 'stroke-dasharray': '4 3' }) : null,
       series.map(s => S('polyline', { points: s.values.map((v, i) => X(i) + ',' + Y(v)).join(' '), fill: 'none', stroke: 'var(--c-' + s.color + ')', 'stroke-width': 2, 'stroke-dasharray': s.dash || null })));
   }
   function smooth(arr, k) { const out = []; let acc = 0; for (let i = 0; i < arr.length; i++) { acc += arr[i]; if (i >= k) acc -= arr[i - k]; out.push(acc / Math.min(i + 1, k)); } return out; }
@@ -126,7 +128,7 @@
           h('p.muted', kind === 'eps' ? 'ε=0 常常锁死在早期看起来不错的机器上；ε 太大则浪费太多步在已知较差的机器上。' : '课件的对比图中 UCB 表现最好、τ=1 的 softmax 最差；有 drift 时课件图里 ε-decreasing 和 UCB 适应最慢。本站的 drift 很剧烈（D 从 3 掉到 0），D 的平均很快被拉低、A 的加分又大，所以这里 UCB 反而恢复得最快；ε 已衰减到接近 0 的 ε-decreasing 和 ε-first 适应最差。'));
       }
       const stratSeg = segmented(STRATS, P.strategy, v => { P.strategy = v; paramControls(); reset(); }, '策略');
-      const driftBox = h('input', { type: 'checkbox' }); driftBox.addEventListener('change', () => { P.drift = driftBox.checked; reset(); });
+      const driftBox = h('input', { type: 'checkbox' }); driftBox.addEventListener('change', () => { P.drift = driftBox.checked; clear(compare); reset(); });
       el.put(stratSeg, params,
         h('label.viz-row', driftBox, ' 奖励分布漂移（drift）：第 ' + P.horizon / 2 + ' 步后机器 A 变成最好、D 变成最差'),
         h('div.viz-row', button('走 1 步', () => run(1), 'btn'), button('走 10 步', () => run(10), 'btn'), button('跑完 ' + P.horizon + ' 步', () => run(P.horizon), 'btn primary'), button('重置', reset, 'btn ghost')),

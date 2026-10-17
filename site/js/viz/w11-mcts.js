@@ -69,13 +69,14 @@
     title: 'MCTS Gridworld：每次决策 200 次迭代，执行后复用子树',
     mount(el) {
       const g = courseGrid(), P = { iters: 200, horizon: 60, c: Math.SQRT2, reuse: true, seed: 7, by: 'q' };
-      let tree, s, rng, dec, log, stale, searched, done;
+      let tree, s, rng, dec, log, stale, searched, done, searchParams;
       const pic = h('div'), info = h('div'), logBox = h('div');
-      function reset() { rng = rngOf(P.seed); s = g.start; tree = M.createTree(g, s); tree.carried = 0; dec = 1; log = []; stale = {}; searched = false; done = false; draw(); }
+      function reset() { rng = rngOf(P.seed); s = g.start; tree = M.createTree(g, s); tree.carried = 0; dec = 1; log = []; stale = {}; searched = false; done = false; searchParams = null; draw(); }
       function runSearch() {
         if (done) return;
         if (searched) { draw('这一状态已经搜索过；先执行动作，或 Reset。'); return; }
-        M.search(g, tree, P.iters, { c: P.c, horizon: P.horizon, rng });
+        searchParams = { c: P.c, horizon: P.horizon };
+        M.search(g, tree, P.iters, { ...searchParams, rng });
         searched = true; draw();
       }
       function act() {
@@ -88,16 +89,17 @@
         log.push({ dec, s, sum, carried: tree.carried, a, next: o.next, kind: o.kind, q: tree.root.edges[a].Q, n: tree.root.edges[a].N });
         const nt = M.advance(g, tree, a, o.next, P.reuse);
         tree = { root: nt.root, iterations: 0, carried: nt.carried };
-        s = o.next; dec++; searched = false;
+        s = o.next; dec++; searched = false; searchParams = null;
         if (g.isTerminal(s)) done = true;
         draw();
       }
       function auto() { let k = 0; while (!done && k < 30) { if (!searched) runSearch(); act(); k++; } }
       function draw(msg) {
+        const shown = searchParams || P;
         const stats = searched || tree.carried ? M.stateStats(g, tree) : {};
         const staleNow = {}; Object.keys(stale).forEach(k => { if (!stats[k]) staleNow[k] = stale[k]; });
         const chosen = searched ? M.bestAction(g, tree.root, P.by) : null;
-        clear(pic).put(mctsGridSVG(g, stats, { root: done ? null : s, chosen, stale: staleNow, caption: ['After ' + tree.iterations + ' iterations', 'γ=0.9', 'c=' + (Math.abs(P.c - Math.SQRT2) < 1e-9 ? '√2' : fmt(P.c, 2)), 'Horizon: ' + P.horizon] }));
+        clear(pic).put(mctsGridSVG(g, stats, { root: done ? null : s, chosen, stale: staleNow, caption: ['After ' + tree.iterations + ' iterations', 'γ=0.9', 'c=' + (Math.abs(shown.c - Math.SQRT2) < 1e-9 ? '√2' : fmt(shown.c, 2)), 'Horizon: ' + shown.horizon] }));
         const sum = M.rootVisits(g, tree.root);
         clear(info).put(
           msg ? h('p.viz-note', msg) : null,

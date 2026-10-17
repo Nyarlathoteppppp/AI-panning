@@ -15,13 +15,13 @@
     lo = Math.min(lo, est, target, after) - 0.05; hi = Math.max(hi, est, target, after) + 0.05;
     const W = 380, X = v => 20 + (v - lo) / (hi - lo) * (W - 40);
     const mark = (v, color, label, y) => [svg('circle', { cx: X(v), cy: 40, r: 6, fill: 'var(--c-' + color + ')' }),
-      svg('text', { x: X(v), y, class: 'label', 'text-anchor': 'middle', fill: 'var(--c-' + color + ')', text: label + ' ' + fmt(v, 4) })];
-    return svg('svg', { viewBox: '0 0 ' + W + ' 86', class: 'chart' },
+      svg('text', { x: X(v), y, class: 'label', 'text-anchor': X(v) < 70 ? 'start' : X(v) > W - 70 ? 'end' : 'middle', style: 'fill:var(--c-' + color + ')', text: label + ' ' + fmt(v, 4) })];
+    return svg('svg', { viewBox: '0 0 ' + W + ' 112', class: 'chart' },
       svg('line', { x1: 20, x2: W - 20, y1: 40, y2: 40, class: 'axis' }),
       [lo, 0, hi].filter((v, i, a) => a.indexOf(v) === i && v >= lo && v <= hi).map(v => [svg('line', { x1: X(v), x2: X(v), y1: 36, y2: 44, class: 'axis' }), svg('text', { x: X(v), y: 58, class: 'tick', 'text-anchor': 'middle', text: fmt(v, 2) })]),
       svg('line', { x1: X(est), x2: X(target), y1: 40, y2: 40, stroke: 'var(--c-red)', 'stroke-width': 4, opacity: 0.35 }),
       svg('line', { x1: X(est), x2: X(after), y1: 40, y2: 40, stroke: 'var(--c-teal)', 'stroke-width': 4 }),
-      mark(est, 'blue', '旧估计', 20), mark(target, 'green', 'target', 78), Math.abs(X(after) - X(est)) < 70 || Math.abs(X(after) - X(target)) < 70 ? svg('circle', { cx: X(after), cy: 40, r: 6, fill: 'var(--c-teal)' }) : mark(after, 'teal', '新估计', 20));
+      mark(est, 'blue', '旧估计', 20), mark(target, 'green', 'target', 78), mark(after, 'teal', '新估计', 104));
   }
   RL.vizUtil = Object.assign(RL.vizUtil || {}, { numberLine });
 
