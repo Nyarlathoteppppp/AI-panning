@@ -27,8 +27,8 @@
     c19: R`TD(λ) 最出名的一次亮相是 Gerald Tesauro 在 IBM 做的 TD-Gammon（1992 年）：一个神经网络只靠和自己下西洋双陆棋（backgammon）、用 TD(λ) 学习，就达到了接近世界冠军的水平。它下出的一些开局走法和人类专家的习惯不同，后来人类高手研究后也改变了这些开局的下法。`,
     c20: R`SARSA 这个名字就是它的更新要用到的五样东西：$S_t, A_t, R_{t+1}, S_{t+1}, A_{t+1}$——记住名字就记住了算法。它由 Rummery 和 Niranjan 在 1994 年提出，当时叫 “modified connectionist Q-learning”；SARSA 这个好记的名字是 Sutton 后来起的。`,
     c21: R`Q-learning 出自 Chris Watkins 1989 年在剑桥大学的博士论文《Learning from Delayed Rewards》，1992 年他和 Peter Dayan 证明了它在表格情形下会收敛到最优 Q。“Q”通常被解释为 quality：一个动作在某个状态下有多“好”。`,
-    c25: R`DeepMind 在 2013 年用 DQN 直接从 Atari 游戏的屏幕像素学打游戏，2015 年在《Nature》上发表：同一个网络结构、同一套参数，学会了 49 个游戏，其中很多达到或超过人类水平。最出名的是《打砖块》（Breakout）：它自己学会先在一侧凿出一条通道，把球打到砖墙后面来回反弹。DQN 用的 experience replay 早在 1992 年就由 Long-Ji Lin 提出。`,
-    c27: R`REINFORCE 是 Ronald Williams 1992 年起的名字，它本身就是一个缩写，拼出来正好是更新公式：**RE**ward **I**ncrement = **N**onnegative **F**actor × **O**ffset **R**einforcement × **C**haracteristic **E**ligibility。对应过来就是 $\Delta\theta=\alpha\times(G_t-b)\times\nabla\log\pi(a\mid s)$：非负的学习率 × 减去参照值后的回报 × score function。（$b$ 是 baseline（基线）：先从 $G_t$ 里减掉的一个参照值，例如这个状态平时的平均回报；本章的版本相当于 $b=0$，W10-2 再讲为什么要减。）`,
+    c25: R`DeepMind 在 2013 年用 DQN 直接从 Atari 游戏的屏幕像素学打游戏，2015 年在《Nature》上发表：同一个算法、同一个网络结构和同一套超参数（每个游戏各自训练一份权重），在 49 个游戏上学会了玩，其中很多达到或超过人类水平。最出名的是《打砖块》（Breakout）：它自己学会先在一侧凿出一条通道，把球打到砖墙后面来回反弹。DQN 用的 experience replay 早在 1992 年就由 Long-Ji Lin 提出。`,
+    c27: R`REINFORCE 是 Ronald Williams 1992 年起的名字，它本身就是一个缩写，拼出来正好是更新公式：**RE**ward **I**ncrement = **N**onnegative **F**actor × **O**ffset **R**einforcement × **C**haracteristic **E**ligibility。对应过来就是 $\Delta\theta=\alpha\times(G_t-\text{baseline})\times\nabla\log\pi(a\mid s)$：非负的学习率 × 减去参照值后的回报 × score function。（baseline（基线）：先从 $G_t$ 里减掉的一个参照值，例如这个状态平时的平均回报；本章的版本相当于 baseline $=0$，W10-2 再讲为什么要减。）`,
     c28: R`Policy gradient theorem 由 Sutton、McAllester、Singh 和 Mansour 在 NIPS 1999（2000 年出版）发表。它的妙处在于：梯度里不需要对“状态分布怎么随 θ 变化”求导，所以不需要知道环境模型也能估计梯度。`,
     c30: R`回头看 REINFORCE 名字里的 “Offset Reinforcement”：offset 就是“减去一个参照值”，也就是本章的 baseline。Williams 在 1992 年提出 REINFORCE 时就已经把 baseline 写进了公式。`,
     c31: R`Actor-critic 最早出现在 Barto、Sutton 和 Anderson 1983 年的“倒立摆”（pole balancing，小车上立一根杆子不让它倒）实验里：一个模块负责选动作（当时叫 ASE），另一个模块负责评价好坏（叫 ACE，adaptive critic element）。“演员 + 评论家”的分工从那时一直沿用到今天。`,
@@ -37,6 +37,6 @@
     c34: R`UCT（Upper Confidence bounds applied to Trees）由匈牙利学者 Levente Kocsis 和 Csaba Szepesvári 在 2006 年提出，思路就是“把搜索树的每个节点都当成一个 multi-armed bandit”，直接借用了 bandit 问题里的 UCB1 公式。`,
     c36: R`有掷骰子的游戏天然就有 chance node：比如西洋双陆棋（backgammon），轮到你走之前先掷骰子，结果不由你决定，只能按概率取平均——这正是 Expectimax 的两种节点交替出现的样子。`,
     c37: R`2016 年 3 月 AlphaGo 对李世石的第 2 局，第 37 手下在五路“肩冲”，解说员一开始以为是失误。DeepMind 事后说，AlphaGo 估计人类棋手下出这一手的概率只有约万分之一，但它的搜索认为这步好——这正是“prior 低、但搜索价值推翻了它”的真实例子。第 4 局李世石的第 78 手被称为“神之一手”，那是 AlphaGo 在这次比赛中唯一输掉的一局。`,
-    c38: R`AlphaGo Zero 从随机下棋开始，只靠自我对弈，三天后以 100 : 0 战胜了打败李世石的 AlphaGo Lee。AlphaZero 用同样的方法学国际象棋：按 2017 年的预印本，训练约 4 小时后估计棋力就超过了当时最强的程序之一 Stockfish 8（用了几千块 TPU），训练 9 小时后的正式 100 局对战是 28 胜 72 和 0 负。李世石在 2019 年宣布退役时说，AI 是一个“无法被打败的存在”。`
+    c38: R`AlphaGo Zero 从随机下棋开始，只靠自我对弈，三天后以 100 : 0 战胜了打败李世石的 AlphaGo Lee。AlphaZero 用同样的方法学国际象棋：按 2017 年的预印本，AlphaZero 的训练用了几千块 TPU（Google 的神经网络专用芯片），约 4 小时后估计棋力就超过了当时最强的程序之一 Stockfish 8，训练 9 小时后的正式 100 局对战是 28 胜 72 和 0 负。李世石在 2019 年宣布退役时说，AI 是一个“无法被打败的存在”。`
   };
 })(window);

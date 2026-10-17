@@ -110,7 +110,7 @@
       }
       st.text('cS', CX + CS / 2, CY + 3 * CS + CS / 2, 'S', { size: 14, weight: 700, parent: 'cliff' });
       st.text('cG', CX + 7 * CS + CS / 2, CY + 3 * CS + CS / 2, 'G', { size: 14, weight: 700, color: PAL.green, parent: 'cliff' });
-      st.text('cliffl', CX + 4 * CS, CY + 3 * CS + CS / 2, '悬崖（掉下去 −5）', { size: 12, color: PAL.red, parent: 'cliff' });
+      st.text('cliffl', CX + 4 * CS, CY + 3 * CS + CS / 2, '悬崖（掉下去 −100，回起点）', { size: 12, color: PAL.red, parent: 'cliff' });
       const P = (cc, rr) => (CX + cc * CS + CS / 2) + ' ' + (CY + rr * CS + CS / 2);
       st.add('pathQ', 'path', { d: 'M ' + P(0, 3) + ' L ' + P(0, 2) + ' L ' + P(7, 2) + ' L ' + P(7, 3), stroke: PAL.teal, 'stroke-width': 3.5, fill: 'none', op: 0 }, 'cliff');
       st.add('pathS', 'path', { d: 'M ' + P(0, 3) + ' L ' + P(0, 0) + ' L ' + P(7, 0) + ' L ' + P(7, 3), stroke: PAL.orange, 'stroke-width': 3.5, fill: 'none', op: 0 }, 'cliff');
@@ -141,7 +141,7 @@
         set: util.merge(util.each(leftSide.length, i => ({ [leftSide[i] + '.op']: 0 })), { 'cliff.op': 1, 'pathQ.op': 1, 'pathQ.draw': 1, 'pathS.op': 1, 'pathS.draw': 1 }),
         timing: util.merge(util.each(leftSide.length, i => ({ [leftSide[i]]: [0, 0.3] })), { cliff: [0.25, 0.5], pathQ: [0.45, 0.75], pathS: [0.65, 1] }),
         dur: 2200, tex: R`\htmlClass{fx-sarsa}{\text{SARSA：远离悬崖}}\qquad\htmlClass{fx-ql}{\text{Q-learning：贴着悬崖}}`,
-        cap: '放到悬崖上就看出差别：SARSA 的 target 里算进了“以后偶尔会乱走一步”，悬崖边的格子被掉崖拉低，于是学会**绕远路**（橙色）；Q-learning 假设以后都贪心，学到**贴边的最短路**（青色），但训练时 ε 乱走真会掉下去。'
+        cap: '放到悬崖上就看出差别（每走一步 −1、进终点那一步 0，掉下悬崖 −100 并回到起点）：SARSA 的 target 里算进了“以后偶尔会乱走一步”，悬崖边的格子被掉崖拉低，于是学会**绕远路**（橙色）；Q-learning 假设以后都贪心，学到**贴边的最短路**（青色），但训练时 ε 乱走真会掉下去。'
       });
       st.base['pathQ.draw'] = 0; st.base['pathS.draw'] = 0;
       return frames;

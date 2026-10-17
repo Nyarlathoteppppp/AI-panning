@@ -130,7 +130,7 @@
           clear(out).put(table(['观察', ...ACT.map(a => 'π(' + a + ')'), ...ACT.map(a => 'h(' + a + ')')], Object.keys(H).map(o => [o, ...ACT.map(a => fmt(P[o][a], 3)), ...H[o].map(v => fmt(v, 2))])),
             readout([['已训练 episode', String(episodes)], ['当前 policy 的平均期望回报 J', fmt(ev.J, 3) + '（最好的确定性 policy 0.542）'], ['100 步内到达钱袋的概率', fmt(ev.goal, 3)]]));
           clear(chart).put(h('h4', '纵轴：π(Right | grey)；虚线 0.5＝最好的对称随机 policy（策略）'),
-            hist.length > 1 ? [RL.vizUtil.lineChart([{ values: hist, color: 'orange' }, { values: hist.map(() => 0.5), color: 'gray', dash: '4 3' }], { xlabel: 'episode / 10', min: 0, max: 1 }), h('p.muted', 'π(Right | grey) 的变化：REINFORCE 会把它推向 0.5 附近——确定性的 Q-learning 做不到。')] : null);
+            hist.length > 1 ? [RL.vizUtil.lineChart([{ values: hist, color: 'orange' }, { values: hist.map(() => 0.5), color: 'gray', dash: '4 3' }], { xlabel: 'episode / 10', min: 0, max: 1 }), h('p.muted', 'π(Right | grey) 的变化：REINFORCE 让它在 0.5 附近摆动（单条 episode 的噪声会推来推去，α 大时更快稳定）——确定性的 Q-learning 做不到。')] : null);
         }
         body.put(slider('α', { min: 0.01, max: 0.5, step: 0.01, value: alpha, format: v => v.toFixed(2), onInput: v => { alpha = v; } }),
           h('div.viz-row', button('训练 100 条 episode', () => run(100), 'btn primary'), button('训练 1000 条', () => run(1000), 'btn'), button('重置 h = 0', reset, 'btn ghost')), pic, out, chart);

@@ -32,7 +32,7 @@
     c31: [R`执行一步，得到 $(s,a,r,s')$`, R`TD error：$\delta=r+\gamma V(s')-V(s)$（$s'$ 终止时 $V(s')=0$）`, R`actor：$h(s,b)\leftarrow h(s,b)+\alpha\,\delta\,(\mathbb 1\{b=a\}-\pi(b\mid s))$`, R`critic：$V(s)\leftarrow V(s)+\beta\,\delta$`],
     c33: [R`Selection：从根用 UCB 往下选，直到某个节点还有未试的动作，或采样到树里没有的后继，或走到树里已有的终止节点`, R`Expansion：为新结果建一个节点（走到已有终止节点时没有新节点，直接令 $G=0$ 去回传）`, R`Simulation：从新节点 rollout 到终止或 horizon，算 $G$（新节点是终止状态时 $G=0$）`, R`Backpropagation：从下往上，每条边先算 $R\leftarrow r+\gamma R$，再 $Q\leftarrow Q+\frac{R-Q}{N+1}$、$N\leftarrow N+1$`],
     c34: [R`取这个节点的访问次数 $N(s)$，算 $\ln N(s)$（新树的根有 $N(s)=\sum_aN(s,a)$；树里其他节点被创建时还多算了 1 次，通常 $N(s)=1+\sum_aN(s,a)$）`, R`每个动作的 bonus $=c\sqrt{\ln N(s)/N(s,a)}$（$N(s,a)=0$ 记作 $+\infty$）`, R`UCB $=Q+\text{bonus}$，搜索时选最大的`, R`搜索结束后，按 $Q$ 最大（或访问次数最多）选要执行的动作`],
-    c36: [R`decision node：列出所有动作`, R`每个动作的 chance node：列出所有结果和概率`, R`每个结果算 $r+\gamma V_{d-1}(s')$（终止状态或深度用完时取 0）`, R`按概率加权求和得 $Q_d(s,a)$`, R`$V_d(s)=\max_aQ_d(s,a)$`],
+    c36: [R`decision node：列出所有动作`, R`每个动作的 chance node：列出所有结果和概率`, R`每个结果算 $r+\gamma V_{d-1}(s')$（$s'$ 是终止状态或深度已用完时，$V_{d-1}(s')$ 取 0；$r$ 照算，例如进 $s_{11}$ 仍得 +1）`, R`按概率加权求和得 $Q_d(s,a)$`, R`$V_d(s)=\max_aQ_d(s,a)$`],
     c37: [R`算 $\sum_uN(s,u)$ 和它的平方根`, R`每个动作的加分 $=c_{\text{puct}}\,P(s,b)\,\sqrt{\sum_uN}/(1+N(s,b))$`, R`加上 $Q(s,b)$，选最大`],
     c38: [R`取根节点各动作的访问次数 $N(s_t,a)$`, R`每个算 $N^{1/\tau}$`, R`归一化得 $\pi_t$`, R`训练损失：$(z_t-v_\theta)^2-\sum_a\pi_t\log p_\theta+\beta\lVert\theta\rVert^2$，逐项代入`]
   };

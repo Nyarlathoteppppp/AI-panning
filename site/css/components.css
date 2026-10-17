@@ -52,6 +52,11 @@
 .prose table, table.data { border-collapse: collapse; width: 100%; margin: .6em 0 1.2em; font-size: .92rem; display: block; overflow-x: auto; }
 .prose th, .prose td, table.data th, table.data td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; vertical-align: top; }
 .prose th, table.data th { background: var(--surface-2); font-weight: 600; white-space: nowrap; }
+.prose table:has(th:nth-child(6)) th { white-space: normal; }
+/* wide tables scroll sideways: keep a thin scrollbar visible (macOS hides overlay scrollbars) */
+.prose table::-webkit-scrollbar, table.data::-webkit-scrollbar { height: 8px; }
+.prose table::-webkit-scrollbar-thumb, table.data::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+.prose table::-webkit-scrollbar-track, table.data::-webkit-scrollbar-track { background: transparent; }
 .prose td .katex, table.data td .katex { font-size: 1em; }
 table.data { display: table; font-variant-numeric: tabular-nums; }
 table.data td.num, table.data th.num { text-align: right; }

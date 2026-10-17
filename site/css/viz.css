@@ -12,6 +12,8 @@ body.has-viz-panel .viz-host { border: 0; padding: 0; margin: 0; }
 .viz-step, .viz-card { overflow-x: auto; }
 .viz-host { min-width: 0; max-width: 100%; }
 .viz-body table.data { display: block; overflow-x: auto; }
+.viz-body table.data th { white-space: normal; }
+.viz-body table.data button { white-space: nowrap; }
 .viz-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .viz-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
 .viz-body .katex-display { overflow-x: auto; overflow-y: hidden; padding: 2px 0; }

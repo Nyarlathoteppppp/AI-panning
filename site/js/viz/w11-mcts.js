@@ -68,7 +68,7 @@
   RL.viz.register('mctsgrid', {
     title: 'MCTS Gridworld：每次决策 200 次迭代，执行后复用子树',
     mount(el) {
-      const g = courseGrid(), P = { iters: 200, horizon: 60, c: Math.SQRT2, reuse: true, seed: 7, by: 'q' };
+      const g = courseGrid(), P = { iters: 200, horizon: 60, c: Math.SQRT2, reuse: true, seed: 18, by: 'q' };
       let tree, s, rng, dec, log, stale, searched, done, searchParams;
       const pic = h('div'), info = h('div'), logBox = h('div');
       function reset() { rng = rngOf(P.seed); s = g.start; tree = M.createTree(g, s); tree.carried = 0; dec = 1; log = []; stale = {}; searched = false; done = false; searchParams = null; draw(); }
@@ -124,7 +124,7 @@
         h('p.muted', '迭代次数、horizon、c 从下一次“运行 MCTS”开始生效，不改变已经算好的统计；“复用 / 丢弃”在下一次“执行动作”时生效。'),
         h('div.viz-row', button('运行 MCTS', runSearch, 'btn primary'), button('执行动作（会打滑）', act, 'btn'), button('自动跑到终止', auto, 'btn'), button('Reset', reset, 'btn ghost')),
         pic, info, logBox,
-        h('p.muted', '模拟是随机的，具体数字不会和课件一样（课件也只是一次运行）。种子 7 恰好走出与课件相同的路线 Up → Up → Up → Right → Right → Right；可以换种子看其他结果，例如第一步就打滑。'));
+        h('p.muted', '模拟是随机的，具体数字不会和课件一样（课件也只是一次运行）。默认种子 18 恰好走出与课件相同的路线：第一步 Up 向左打滑留在 s1，之后 Up → Up → Right → Right → Right（6 次决策；ΣN 和课件不完全相同）。可以换种子看其他路线。'));
       reset();
     }
   });
@@ -338,7 +338,7 @@
     mount(el) {
       const TRUE = [0.1, 0.5, 0.2], NM = ['a₁', 'a₂', 'a₃'];
       const PRI = { right: [0.1, 0.8, 0.1], wrong: [0.8, 0.1, 0.1], flat: [1 / 3, 1 / 3, 1 / 3] };
-      const P = { rule: 'puct', prior: 'wrong', c: 1.5, seed: 4 };
+      const P = { rule: 'puct', prior: 'wrong', c: 1.5, seed: 15 };
       let st;
       const out = h('div'), chart = h('div');
       function reset() { st = { N: [0, 0, 0], W: [0, 0, 0], hist: [], rng: rngOf(P.seed), last: null }; draw(); }
@@ -362,7 +362,7 @@
               (st.last && st.last.i === i ? '上一次选了它' : '') + (pick(sc) === i ? (st.last && st.last.i === i ? '；' : '') + '下一次会选它' : '')], cls: st.last && st.last.i === i ? 'hl' : null }))),
           h('p.muted', '高亮行 = 上一次实际选中的动作。“真实价值”是这个动作每次模拟结果（赢 +1 / 输 −1）的期望：价值 v 对应赢的概率 (1 + v)/2，例如 0.5 = 75% 赢、25% 输；搜索看不到这一列，只能靠样本平均 Q 去估计。'),
           h('p.viz-note', '共 ' + n + ' 次模拟。' + (st.last ? '上一次选了 ' + NM[st.last.i] + '，结果 z = ' + (st.last.z > 0 ? '+1' : '−1') + '。' : '') +
-            (P.rule === 'puct' ? ' PUCT：N = 0 时分数是 Q + c·P·√ΣN，不是 +∞，所以 prior 高的动作先被搜索，prior 很低的动作可能很久才被试。（第一次模拟前 ΣN = 0，三个分数都是 0；本演示在分数并列时选 prior 大的。）' : ' UCT：没有 prior，N = 0 的动作分数为 +∞，所以每个动作先各试一次。') +
+            (P.rule === 'puct' ? ' PUCT：N = 0 时分数是 Q + c·P·√ΣN，不是 +∞，所以 prior 高的动作先被搜索，prior 很低的动作可能很久才被试。没试过的动作 Q 按 0 算：如果某个动作头一两次就输（Q 变成 −1），没试过的动作反而分数更高，搜索会马上转去试别的——prior 只决定“样本还没变差时”先搜哪里。（第一次模拟前 ΣN = 0，三个分数都是 0；本演示在分数并列时选 prior 大的。）' : ' UCT：没有 prior，N = 0 的动作分数为 +∞，所以每个动作先各试一次。') +
             ' 最好的动作是 a₂（真实价值 0.5）。' + (P.rule === 'puct' && P.prior === 'wrong' ? ' prior 把 0.8 给了较差的 a₁：一开始搜索集中在 a₁；随着 a₁ 的 Q 被样本拉低、N 增大使它的 bonus 变小，搜索会转向 a₂——“search values can overturn the network’s initial preference”。但不保证很快：如果 a₂ 前一两次模拟碰巧得到 −1，它的 Q 被拉低、prior 又只有 0.1，可能要很久才被再次选中（换几个随机种子试试）。prior 越偏，纠正越慢。' : '')));
         const hs = st.hist;
         clear(chart).put(hs.length > 1 ? [RL.vizUtil.lineChart([0, 1, 2].map(i => ({ values: hs.map(v => v[i] / Math.max(1, v[0] + v[1] + v[2])), color: ['red', 'blue', 'orange'][i] })), { xlabel: '模拟次数', min: 0, max: 1 }),

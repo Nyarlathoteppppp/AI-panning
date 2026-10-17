@@ -78,7 +78,7 @@ ${'```'}` },
 **有了价值，怎样选动作？**
 
 - **已知 $p,r$**：只存 $V(s)$ 就能比较动作——把每个动作展开一步，算 $\sum p[r+\gamma V(s')]$。
-- **不知道模型**：手里即使有 $V(s')$，也不知道每个动作会以什么概率到哪些 $s'$，无法比较动作；直接学 $Q(s,a)$ 才能用 $\arg\max_aQ(s,a)$ 选动作。这就是 W7–W8 的 model-free 方法都学 Q 的原因。
+- **不知道模型**：手里即使有 $V(s')$，也不知道每个动作会以什么概率到哪些 $s'$，无法比较动作；直接学 $Q(s,a)$ 才能用 $\arg\max_aQ(s,a)$ 选动作。这就是 W7–W8 的 model-free **控制**方法（MC control、SARSA、Q-learning）都学 Q 的原因；只做 prediction（评估一个给定 policy）时，model-free 也可以直接学 $V$，例如 TD(0)。
 
 **max 与 argmax**：$\max_aQ(s,a)$ 返回“最好有多好”（一个数），$\arg\max_aQ(s,a)$ 返回“哪个动作最好”（一个动作）。写 policy improvement 和 Q-learning 时不要把两者混用。
 
@@ -242,7 +242,7 @@ $s_1$ 离终点最少 5 步，所以 $V_1$ 到 $V_4$ 里它都是 0，直到“�
 :::` } },
     c07: { extra: { compare: String.raw`
 :::note 常见疑问 3：可是“之后的” $v_*(s')$ 我们也不知道，怎么用它来选第一步？
-用 **Value Iteration（VI，价值迭代，第 10 章）**：先把“之后”设成“没有之后”（$V_0=0$），算出“只剩 1 步”时的最优价值 $V_1$；再用 $V_1$ 当作“之后”，算出“只剩 2 步”的 $V_2$……每一轮里“之后的价值”都是上一轮已经算好的，所以没有循环依赖。$k$ 足够大时 $V_k$ 不再变化，就是 $v_*$。第 10 章“直觉”环节有逐轮的数字表。
+用 **Value Iteration（VI，价值迭代，第 10 章）**：先把“之后”设成“没有之后”（$V_0=0$），算出“只剩 1 步”时的最优价值 $V_1$；再用 $V_1$ 当作“之后”，算出“只剩 2 步”的 $V_2$……每一轮里“之后的价值”都是上一轮已经算好的，所以没有循环依赖。$V_k$ 随 $k$ 增大收敛到 $v_*$（一般是无限逼近，有限轮停下时得到的是近似值；实际按“变化量小于阈值”停止）。第 10 章“直觉”环节有逐轮的数字表。
 :::` } }
   });
 })(window);
@@ -459,7 +459,7 @@ $$G=0+0.9\times0+0.9^2\times1=0.81$$`,
     }],
     c23: [{
       title: '从损失推出更新：加号是怎么来的',
-      latex: R`\htmlClass{fx-loss}{L(\mathbf w)=\tfrac12\big(Y-\hat Q\big)^2}\ \Rightarrow\ \htmlClass{fx-grad}{\nabla_{\mathbf w}L=-\big(Y-\hat Q\big)\nabla_{\mathbf w}\hat Q}\ \Rightarrow\ \htmlClass{fx-upd}{\mathbf w\leftarrow\mathbf w-\alpha\nabla_{\mathbf w}L=\mathbf w+\alpha\big(Y-\hat Q\big)\nabla_{\mathbf w}\hat Q}`,
+      latex: R`\begin{gathered}\htmlClass{fx-loss}{L(\mathbf w)=\tfrac12\big(Y-\hat Q\big)^2}\\\Rightarrow\ \htmlClass{fx-grad}{\nabla_{\mathbf w}L=-\big(Y-\hat Q\big)\nabla_{\mathbf w}\hat Q}\\\Rightarrow\ \htmlClass{fx-upd}{\mathbf w\leftarrow\mathbf w-\alpha\nabla_{\mathbf w}L=\mathbf w+\alpha\big(Y-\hat Q\big)\nabla_{\mathbf w}\hat Q}\end{gathered}`,
       parts: [
         { key: 'loss', label: '① 损失：预测离 target 多远', color: 'red', text: '把 target $Y$ 当成常数（semi-gradient），只看当前预测 $\\hat Q(S_t,A_t;\\mathbf w)$ 差多少。$\\tfrac12$ 只是为了求导干净；课件不写 $\\tfrac12$，多出的 2 吸收进 α。' },
         { key: 'grad', label: '② 求导：链式法则', color: 'purple', text: '外层 $\\tfrac12u^2$ 的导数是 $u$，内层 $Y-\\hat Q$ 对 $\\mathbf w$ 的导数是 $-\\nabla\\hat Q$，相乘出现负号。' },
@@ -472,7 +472,7 @@ $$G=0+0.9\times0+0.9^2\times1=0.81$$`,
       parts: [
         { key: 'ad', label: '这次更新的力度', color: 'red', text: '学习率 × TD error。例：Method 1 课件更新中 $\\alpha\\delta=0.1\\times1$。' },
         { key: 'z', label: '另一个状态的特征', color: 'blue', text: '我们没有观察这个状态，只看它的预测会被顺带改多少。' },
-        { key: 'xz', label: '两个特征的重叠程度', color: 'purple', text: '被更新状态的特征 $\\mathbf x$ 与它的点积。重叠越多一起变得越多（泛化）；正交（点积为 0）就完全不受影响；点积为负会反向变化（干扰）。例：$\\mathbf x(s_{10})=(0.2,0.4)$，$\\mathbf z=\\mathbf x(s_6)=(0.4,0.2)$，$\\Delta\\hat V(s_6)=0.1\\times(0.08+0.08)=0.016$——正好是课件的 $\\hat V(s_6)$。' }
+        { key: 'xz', label: '两个特征的重叠程度', color: 'purple', text: '被更新状态的特征 $\\mathbf x$ 与它的点积。重叠越多一起变得越多（泛化）；正交（点积为 0）就完全不受影响；点积为负会反向变化；即使点积为正，也可能把状态之间的相对大小推错——这两种都是干扰。例：$\\mathbf x(s_{10})=(0.2,0.4)$，$\\mathbf z=\\mathbf x(s_6)=(0.4,0.2)$，$\\Delta\\hat V(s_6)=0.1\\times(0.08+0.08)=0.016$——正好是课件的 $\\hat V(s_6)$。' }
       ]
     }],
     c27: [{
@@ -492,7 +492,7 @@ $$G=0+0.9\times0+0.9^2\times1=0.81$$`,
     }],
     c28: [{
       title: '轨迹梯度：环境概率为什么消失、γᵗ 从哪来',
-      latex: R`\nabla_\theta J=\htmlClass{fx-e}{\mathbb E_\tau}\big[\htmlClass{fx-log}{\nabla_\theta\log p_\theta(\tau)}\,G_0(\tau)\big],\qquad \htmlClass{fx-log}{\nabla_\theta\log p_\theta(\tau)}=\htmlClass{fx-sum}{\sum_t\nabla_\theta\log\pi_\theta(A_t\mid S_t)}\ \Rightarrow\ \htmlClass{fx-res}{\nabla_\theta J=\mathbb E\Big[\sum_t\gamma^tG_t\,\nabla_\theta\log\pi_\theta(A_t\mid S_t)\Big]}`,
+      latex: R`\begin{gathered}\nabla_\theta J=\htmlClass{fx-e}{\mathbb E_\tau}\big[\htmlClass{fx-log}{\nabla_\theta\log p_\theta(\tau)}\,G_0(\tau)\big]\\\htmlClass{fx-log}{\nabla_\theta\log p_\theta(\tau)}=\htmlClass{fx-sum}{\sum_t\nabla_\theta\log\pi_\theta(A_t\mid S_t)}\\\Rightarrow\ \htmlClass{fx-res}{\nabla_\theta J=\mathbb E\Big[\sum_t\gamma^tG_t\,\nabla_\theta\log\pi_\theta(A_t\mid S_t)\Big]}\end{gathered}`,
       parts: [
         { key: 'e', label: '① 对所有轨迹求期望', color: 'gray', text: '$J=\\sum_\\tau p_\\theta(\\tau)G_0(\\tau)$。用恒等式 $\\nabla p=p\\,\\nabla\\log p$ 把“对概率求导”变成“对样本求平均”——所以可以靠采样估计。' },
         { key: 'log', label: '② 对数概率的梯度', color: 'purple', text: '$\\log p_\\theta(\\tau)=\\log p(s_0)+\\sum_t\\log\\pi_\\theta(a_t\\mid s_t)+\\sum_t\\log p(s_{t+1}\\mid s_t,a_t)$。' },

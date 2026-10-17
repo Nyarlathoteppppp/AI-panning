@@ -21,7 +21,7 @@
       { key: 'lr', label: 'α', color: 'purple', text: '步长。注意是**加号**：对期望回报做梯度**上升**。' },
       { key: 'disc', label: 'γᵗ', color: 'gray', text: '把从 $t$ 开始计时的 return 放回从 0 开始的时间轴。' },
       { key: 'g', label: 'Monte Carlo return G_t', color: 'green', text: '“这个动作有多好”：用实际 return 估计 $q^{\\pi_\\theta}(S_t,A_t)$。' },
-      { key: 'grad', label: '∇ log π（课件叫 policy gradient，也叫 score function）', color: 'orange', text: '沿这个方向改 θ，$A_t$ 在 $S_t$ 的 log 概率上升最快。tabular 时就是 $\\mathbb 1\\{b=A_t\\}-\\pi(b\\mid S_t)$。注意它不是 $\\nabla J$：$\\nabla J$ 是 $\\gamma^tG_t\\nabla\\log\\pi$ 的期望。' }
+      { key: 'grad', label: '∇ log π（课件叫 policy gradient，也叫 score function）', color: 'orange', text: '沿这个方向改 θ，$A_t$ 在 $S_t$ 的 log 概率上升最快。tabular 时就是 $\\mathbb 1\\{b=A_t\\}-\\pi(b\\mid S_t)$。注意它不是 $\\nabla J$：$\\nabla J$ 是整条 episode 上各时刻 $\\gamma^tG_t\\nabla\\log\\pi(A_t\\mid S_t)$ 之和的期望。' }
     ]
   };
   root.RL.content.add([
@@ -38,8 +38,11 @@
 
 **回顾：扩展假设之后的两条线**
 
-- 状态空间很大或连续 → 价值函数近似：已知 MDP 近似 $\hat V(s;\mathbf w)$，未知 MDP 近似 $\hat Q(s,a;\mathbf w)$。局限：近似误差可能导致次优 policy；按课件的构造，模型未知时每个动作单独一组权重 $\mathbf w=(\mathbf w_{a_1},\dots,\mathbf w_{a_{|A|}})$（也可以用动作相关的共享特征，课件未展开）。
-- **动作空间很大或连续**（且动作效果未知）→ 以前用 $\pi(s)=\arg\max_aQ(s,a)$ 找 policy，动作连续时还能这样做吗？
+- 状态空间很大或连续 → 价值函数近似。
+  - 已知 MDP：近似 $\hat V(s;\mathbf w)$；未知 MDP：近似 $\hat Q(s,a;\mathbf w)$。
+  - 局限：近似误差可能导致次优 policy。
+  - 按课件的构造，模型未知时每个动作单独一组权重 $\mathbf w=(\mathbf w_{a_1},\dots,\mathbf w_{a_{|A|}})$。也可以用动作相关的共享特征，课件未展开。
+- **动作空间很大或连续**（且动作效果未知）→ 以前用 $\pi(s)=\arg\max_aQ(s,a)$ 找 policy。动作连续时还能这样做吗？
 `,
     why: R`
 **Value-based 方法的局限（W10 slide 8；指本课此前使用的“表格 / 枚举所有动作取 argmax”的做法）**
@@ -47,7 +50,9 @@
 1. 预测动作的价值 $Q(s,a)$：无法处理很大的动作空间，也无法处理连续动作空间。
 2. 从价值函数导出 policy $\pi(s)=\arg\max_aQ(s,a)$：无法处理连续动作空间；**如果根本没有最好的动作呢？**
 
-在普通的完全可观测 MDP 中，总存在一个最好的动作（确定性最优 policy，第 6 章）。但如果环境是下面这样呢？
+为什么 policy-based 能处理大或连续的动作空间：选动作只需“从分布里抽一个”，更新只需“被抽中那个动作的 $\nabla\log\pi$”，都不用比较所有动作去求 max。动作连续时，可以让 policy 输出一个分布（例如高斯分布的均值 $\mu(s;\theta)$），按它抽样，log 概率对 θ 的导数有闭式（本课不考）。离散动作很多时，softmax 的分母仍要对所有动作求和，好处主要来自用少量共享参数 θ 表示偏好。
+
+在普通的完全可观测 MDP 中，总存在一个最好的动作（确定性最优 policy）。但如果环境是下面这样呢？
 `,
     intuition: R`
 **例 1：多人石头剪刀布（no best action — multi-player）**
@@ -74,9 +79,9 @@
 | g2 | g2 → w3 ← g2 → w3 …（循环） | 0 |
 | w3 | w3 ← g2 → w3 …（循环） | 0 |
 
-平均 $J=(0.81+0.9+1+0+0)/5=0.542$；100 步内到达钱袋的概率 $=3/5=0.6$。这正是课件曲线中“Best deterministic policy”的两条虚线（≈0.54 与 0.6）。随机 0.5/0.5 时循环会被打破：到达率 → 1，平均回报 ≈ 0.77（课件中 “Balanced stochastic reference”）。验算（w1 →、w2 ↓、w3 ← 不变，灰格各 0.5）：由对称性 $V(g_1)=V(g_2)=v_g$，$V(w_1)=V(w_3)=0.9v_g$，$V(w_2)=1$；灰格一半走向 w1/w3、一半走向 w2：$v_g=0.5\times0.9\times0.9v_g+0.5\times0.9\times1$，解得 $v_g\approx0.756$，$V(w_1)\approx0.681$；平均 $(2\times0.681+2\times0.756+1)/5\approx0.775$。
+平均 $J=(0.81+0.9+1+0+0)/5=0.542$；100 步内到达钱袋的概率 $=3/5=0.6$。课件实验把这两个数画成“Best deterministic policy”的参考线（≈0.54 与 0.6）。随机 0.5/0.5 时循环会被打破：到达率 → 1，平均回报 ≈ 0.77（课件中 “Balanced stochastic reference”）。验算（w1 →、w2 ↓、w3 ← 不变，灰格各 0.5）：由对称性 $V(g_1)=V(g_2)=v_g$，$V(w_1)=V(w_3)=0.9v_g$，$V(w_2)=1$；灰格一半走向 w1/w3、一半走向 w2：$v_g=0.5\times0.9\times0.9v_g+0.5\times0.9\times1$，解得 $v_g\approx0.756$，$V(w_1)\approx0.681$；平均 $(2\times0.681+2\times0.756+1)/5\approx0.775$。
 
-**训练时的探索 vs 交付的随机 policy**：ε-greedy 的随机性常常只是为了收集数据，评价时可以换成贪心；这里随机性是**最终方案的一部分**。不能把 REINFORCE 学到的分布最后随手换成 argmax——换了就是另一个 policy，在灰格例子里会重新陷入循环。
+**训练时的探索 vs 交付的随机 policy**：ε-greedy 的随机性常常只是为了收集数据，评价时可以换成贪心；这里随机性是**最终方案的一部分**。不能把 REINFORCE（直接按回报调整动作概率的 policy-based 算法，下一章细讲）学到的分布最后随手换成 argmax——换了就是另一个 policy，在灰格例子里会重新陷入循环。
 `,
     formulas: [{
       title: '两种方法得到 policy 的方式',
@@ -95,7 +100,7 @@
 | REINFORCE（按学到的分布采样） | ≈1.0 | ≈0.77（接近平衡随机 policy） |
 | softmax Q-learning（T=1） | ≈0.7 | ≈0.18 |
 
-**“确定性对随机，比较不公平？那用 softmax 套在学到的 Q 上呢？”** 课件的回答是图：softmax Q-learning 的平均回报反而最低。原因的分析（本站补充）：它学到的两个灰格 Q 值相同（g1、g2 共享同一组 Q），softmax 只是按这些 Q 的大小随机——图中 w1、w3 的 Q 值差距不大（例如 w1 约为 0.63、0.69 与向下的 −1），温度 T=1 时仍有相当概率向下掉进骷髅；灰格上的随机性也不是为了“平衡两侧”而学出来的。
+**“确定性对随机，比较不公平？那用 softmax 套在学到的 Q 上呢？”** 课件的回答是图：softmax Q-learning 的平均回报反而最低。softmax Q-learning：照常用 Q-learning 学 Q，但训练和交付都按 $\pi(a\mid s)\propto e^{Q(s,a)/T}$ 抽动作（$\propto$ 读作“正比于”，算完再除以总和；T 是温度，T=1 时 Q 差 1 只换来约 2.7 倍的概率差）。原因的分析（本站补充）：它学到的两个灰格 Q 值相同（g1、g2 共享同一组 Q），softmax 只是按这些 Q 的大小随机。图中 w1 的四个 Q 大约是 0.63、0.69、0.63 和向下的 −1：T=1 时向右（0.69）只有约 33% 的概率，向下约 6%——在 w1 磨蹭的每一步都有约 6% 掉进骷髅。所以 100 步内到达率虽有约 0.7，其余多半以 −1 结束，到达的也绕了远路（每多一步再乘 0.9），平均回报只剩 0.18。灰格上的随机性也不是为了“平衡两侧”而学出来的。
 
 **结论**：softmax 只说明“怎样由一组数选动作”，不说明“这些数是怎样学出来的”。REINFORCE 的偏好 $h$ 是为了最大化期望回报而学的；Q 值是为了预测回报而学的。
 `,
@@ -166,7 +171,7 @@ $$h(S_t,b)\leftarrow h(S_t,b)+\alpha\gamma^tG_t\big[\mathbb 1\{b=A_t\}-\pi(b\mid
     intuition: R`
 **h 不是 Q，也不是概率**：$h=2$ 不表示期望回报为 2，也不表示概率为 2。只有 softmax 的输出才非负且和为 1。所有偏好同时加 10，概率不变——决定分布的是偏好之间的**差**。（实现时先减去最大偏好再取指数，数值更稳定，结果不变。）
 
-**为什么同时更新所有动作**：被选动作的括号是 $1-\pi(A_t\mid S_t)$（正），其他动作是 $-\pi(b\mid S_t)$（负），增量之和为 0。原本越有把握（π 越大），同样的 return 带来的强化越小。
+**为什么同时更新所有动作**：因为 $\pi(A_t\mid S_t)$ 依赖整行偏好——压低其他动作的偏好，同样能让 $A_t$ 更可能；求导（④）告诉我们每个偏好各该改多少。被选动作的括号是 $1-\pi(A_t\mid S_t)$（正），其他动作是 $-\pi(b\mid S_t)$（负），增量之和为 0。原本越有把握（π 越大），同样的 return 带来的强化越小。
 
 **一次行更新的顺序**：先读取这一行完整的旧概率向量，算出所有增量，再一起写回。不能更新第一个偏好后就重算概率再更新第二个。
 
@@ -179,7 +184,13 @@ $$\frac{\partial\log\pi(a\mid s)}{\partial h(s,c)}=\mathbb 1\{c=a\}-\pi(c\mid s)
 
 这个导数常叫 score（score function，得分函数）。乘上 $\alpha\gamma^tG_t$ 就得到 tabular 更新（课件 slide 27：“effectively, we update for all actions”）。
 
-**为什么对 $\log\pi$ 求导、再乘 $G_t$**：$\partial\log\pi/\partial h=(\partial\pi/\partial h)/\pi$。分子是“让这个动作更可能”的方向；除以 $\pi$，是因为常被选的动作会被抽到更多次——不除的话，它光凭“被抽得多”就会被反复强化。除以 $\pi$ 之后，平均下来每个动作被推动的力度只取决于它之后的回报：$\sum_a\pi(a)\,q(a)\,\frac{\nabla\pi(a)}{\pi(a)}=\sum_aq(a)\nabla\pi(a)$，这正是期望回报 $\sum_a\pi(a)q(a)$ 上升最快的方向。乘 $G_t$ 就是用这一次实际得到的回报代替 $q$（下一章的 Policy Gradient Theorem 把这件事推广到整条轨迹）。
+**为什么对 $\log\pi$ 求导、再乘 $G_t$**：只看一个状态的一次决策。设 $q(a)$ 是在这个状态选 $a$ 之后的平均回报（它不随偏好 $h$ 变）；$\nabla$ 指对这一状态各个偏好 $h(s,\cdot)$ 的偏导排成的向量。我们想让期望回报 $\sum_a\pi(a)q(a)$ 变大，它对 $h$ 的梯度是 $\sum_aq(a)\nabla\pi(a)$。
+
+- REINFORCE 的做法：按 $\pi$ 抽一个动作，沿 $\nabla\log\pi=\nabla\pi/\pi$ 推一下，再乘上这次的回报。
+- 平均下来推了多少：动作 $a$ 被抽中的频率是 $\pi(a)$，回报平均是 $q(a)$，所以平均推动量是 $\sum_a\pi(a)\,q(a)\,\frac{\nabla\pi(a)}{\pi(a)}=\sum_aq(a)\nabla\pi(a)$——正好就是上面那个梯度。
+- 为什么要除以 $\pi$：常被选的动作会被抽到更多次；不除的话，它光凭“被抽得多”就会被反复强化。除以 $\pi$ 正好抵消抽样频率。
+
+乘 $G_t$ 就是用这一次实际得到的回报代替 $q(a)$（下一章的 Policy Gradient Theorem 把这件事推广到整条轨迹）。
 
 **Return 的计算**：episode 结束后可以从末尾令 $G=0$，倒序 $G\leftarrow R_{t+1}+\gamma G$ 存下所有 $G_t$，再按时间正序处理各时刻。**不要每条 episode 都把 h 清零**——h 只在训练开始时初始化一次。
 
@@ -199,7 +210,7 @@ $$\frac{\partial\log\pi(a\mid s)}{\partial h(s,c)}=\mathbb 1\{c=a\}-\pi(c\mid s)
 
 注意不是给 Right 的概率直接加 0.05：先改偏好，再重新 softmax。若 $G_t=-1$，方向反过来；若 $G_t=0$，不更新（这个不减基线的版本）。
 
-**课件 Aliased Gridworld 训练结果（读自课件 slide 19 的图：50,000 次转移，seed 0，γ=0.9）**：灰格的偏好 Left 与 Right 都约为 2.06 / 1.95，其余两个动作约 −2.0，于是 $\pi(\text{Left}\mid\text{grey})\approx0.516$、$\pi(\text{Right}\mid\text{grey})\approx0.466$——接近 0.5/0.5；w1 几乎总是向右（0.974），w2 几乎总是向下（0.994），w3 几乎总是向左（0.961）。对比 Q-learning：两个灰格共享同一组 Q 值，贪心只能选一个方向。
+**课件 Aliased Gridworld 训练结果（读自课件 slide 19 的图：50,000 次转移，seed 0，γ=0.9）**：灰格的偏好 Left 与 Right 都约为 2.06 / 1.95，其余两个动作约 −2.0；图上标的概率是 $\pi(\text{Left}\mid\text{grey})\approx0.516$、$\pi(\text{Right}\mid\text{grey})\approx0.466$（用上面取整后的偏好重算是 0.518 / 0.464，差别来自读数取整）——接近 0.5/0.5；w1 几乎总是向右（0.974），w2 几乎总是向下（0.994），w3 几乎总是向左（0.961）。对比 Q-learning：两个灰格共享同一组 Q 值，贪心只能选一个方向。
 
 **完整 episode 的流程**
 
@@ -219,7 +230,7 @@ ${'```'}
 **怎么用**：
 
 1. “一次更新逐项看”：保持 h=[0,0,0]，选 a₂，G=1，α=0.1——三个动作的概率 1/3 → 被选动作上升。把 G 拖成负数，方向反转；拖到 0，不变。Δh 之和始终为 0。
-2. “在 Aliased Gridworld 上训练”（为避免无限循环，每条 episode 最多 100 步，未终止就按截断后的 return 更新；表中的 J 是按无限时域精确计算的）：训练 1000 条 episode，看灰格的 π(Left)、π(Right) 趋近 0.5，w1/w2/w3 的动作越来越确定，平均回报超过最好确定性 policy 的 0.542。` },
+2. “在 Aliased Gridworld 上训练”（为避免无限循环，每条 episode 最多 100 步，未终止就按截断后的 return 更新；读数里的 J 是按无限时域精确计算的）：点“训练 1000 条”。曲线上 π(Right|grey) 先降到约 0.12，再爬回 0.4–0.5 一带来回摆动——这是 Monte Carlo 噪声，它不会停在 0.5（第 1000 条时恰好是 0.26），灰格向上/向下的概率也还有约 0.07。w1/w2/w3 的动作越来越确定，J ≈ 0.72，已超过最好确定性 policy 的 0.542。想看更接近 0.5/0.5：把 α 调到 0.5，点“重置 h = 0”，再训练 1000 条，灰格约 0.49 / 0.49，J ≈ 0.77。` },
     compare: R`
 | | Q（Q-learning） | h（REINFORCE） | π（softmax 输出） |
 |---|---|---|---|
@@ -240,7 +251,7 @@ ${'```'}
       { kind: '公式计算', q: '三个动作 $h=[0,0,0]$，选第 1 个，$G_t=2$，$t=0$，$\\alpha=0.3$。第 2 个动作的 $\\Delta h$？', answer: -0.2, tol: 0.001, explain: '$\\pi=1/3$；$\\Delta h=0.3\\times2\\times(0-1/3)=-0.2$。' },
       { kind: '公式计算', q: '奖励 $(0,0,1)$，$\\gamma=0.9$。时刻 $t=1$ 的更新中 $\\gamma^tG_t$ 是多少？', answer: 0.81, tol: 0.001, explain: '$G_1=0.9$，$\\gamma^1G_1=0.81$。' },
       { kind: '概念判断', q: '所有偏好同时加 10，policy 会怎样？', options: ['被选概率变大', '不变', '变成均匀分布', '变成确定性'], answer: 1, explain: 'softmax 只依赖偏好之差。' },
-      { kind: 'On/Off-policy', q: 'Tabular REINFORCE 用按当前 policy 采样的 episode 更新同一个 policy。它属于？', options: ['On-policy', 'Off-policy'], answer: 0, explain: '课件：返回的 policy 就是训练的 policy。不能随意用别的 policy 的旧轨迹做未修正的更新。' }
+      { kind: 'On/Off-policy', q: 'Tabular REINFORCE 用按当前 policy 采样的 episode 更新同一个 policy。它属于？', options: ['On-policy', 'Off-policy'], answer: 0, explain: '课件：返回的 policy 就是训练的 policy。别的 policy 采的轨迹里，各动作出现的频率不是当前 π 的，直接拿来更新，梯度会算错。' }
     ],
     source: 'W10 slides 15–22（action preference、softmax policy、tabular REINFORCE 算法、实验结果、Q 值 vs h 值）、27（∂log π/∂h）。'
   },
@@ -256,6 +267,7 @@ ${'```'}
 - 动机：课件写道 tabular policy-based 方法“受限于 policy 空间 $|S|\times|A|$”——指偏好表要存 $|S|\times|A|$ 个条目（确定性 policy 的个数其实是 $|A|^{|S|}$）。状态—动作很多或连续怎么办？
 - **线性 policy 近似**：用参数化函数表示 policy $\pi_\theta(a\mid s)$；$\boldsymbol\theta=(\theta_1,\dots,\theta_n)^\top$；
 $$h(s,a;\boldsymbol\theta)=\boldsymbol\theta^\top f(s,a)=\sum_{i=1}^n\theta_if_i(s,a),\qquad \pi_\theta(a\mid s)=\frac{e^{h(s,a;\theta)}}{\sum_be^{h(s,b;\theta)}}$$
+- $f(s,a)\in\mathbb R^n$ 是人为设计的状态—动作特征向量（与价值近似里的 $\mathbf x(s,a)$ 同一类东西）；
 - 参数 $\boldsymbol\theta$ 用 policy gradient 方法（如 REINFORCE）学习；
 - 另一种方案：神经网络 policy 近似（**本课不覆盖**）。
 
@@ -266,7 +278,7 @@ $$\boldsymbol\theta\leftarrow\boldsymbol\theta+\alpha\gamma^tG_t\nabla_{\boldsym
 $$\nabla_{\boldsymbol\theta}J(\boldsymbol\theta)=\mathbb E_{\pi_\theta}\big[q^{\pi_\theta}(s,a)\,\nabla_{\boldsymbol\theta}\log\pi_{\boldsymbol\theta}(a\mid s)\big]$$
 要求：$\pi_\theta(a\mid s)$ 对 $\boldsymbol\theta$ 可微。
 
-记号说明：这里的期望按“当前 policy 下（带折扣）访问状态和选择动作的频率”加权，严格写法是对折扣占用度求和；在本课 $J=\mathbb E[G_0]$ 的定义下，可直接用下面推导出的 $\mathbb E\big[\sum_t\gamma^tG_t\nabla\log\pi_\theta(A_t\mid S_t)\big]$ 计算，两者是同一个量。（精确写法：定义折扣占用度 $d_\gamma(s)=\sum_t\gamma^tP(S_t=s,\ t<T)$，则 $\nabla J=\sum_sd_\gamma(s)\sum_a\pi(a\mid s)q^\pi(s,a)\nabla\log\pi(a\mid s)$。$d_\gamma$ 加起来不一定等于 1；若把它归一化成概率分布再写成期望，前面还要乘它的总和。考试按课件的期望写法即可。）
+记号说明：这里的 $\mathbb E_{\pi_\theta}$ 是“按当前 policy 一直走下去，各时刻遇到的 $(S_t,A_t)$”的平均，越晚的时刻按 $\gamma^t$ 打折；④ 会推出它就是 $\mathbb E\big[\sum_t\gamma^tG_t\nabla\log\pi_\theta(A_t\mid S_t)\big]$。
 `,
     why: R`
 直接对 $J(\boldsymbol\theta)$ 求导看似需要知道环境（参数改变动作，动作改变轨迹，轨迹又由环境决定）。Policy Gradient Theorem 说：梯度可以写成一个**只需要采样**就能估计的期望——环境的转移概率不依赖 $\boldsymbol\theta$，在 $\nabla\log$ 中消失了。
@@ -280,7 +292,7 @@ $$\nabla_{\boldsymbol\theta}J(\boldsymbol\theta)=\mathbb E_{\pi_\theta}\big[q^{\
 “实际上，tabular REINFORCE 是 REINFORCE 的特例：每个特征是一个状态—动作对的 one-hot 编码。”
 `,
     intuition: R`
-- **Policy gradient** $\nabla\log\pi_\theta(A_t\mid S_t)$：沿这个方向改 θ，$A_t$ 在 $S_t$ 的 log 概率上升最快。（术语：课件把 $\nabla_\theta\log\pi_\theta$ 叫 policy gradient，更通用的名字是 score function，tabular 版就是上一章的 $\mathbb 1\{b=A_t\}-\pi$；真正的“policy 的梯度”是 $\nabla J(\theta)$，它等于 $\gamma^tG_t\nabla\log\pi$ 的期望。）
+- **Policy gradient** $\nabla\log\pi_\theta(A_t\mid S_t)$：沿这个方向改 θ，$A_t$ 在 $S_t$ 的 log 概率上升最快。（术语：课件把 $\nabla_\theta\log\pi_\theta$ 叫 policy gradient，更通用的名字是 score function，tabular 版就是上一章的 $\mathbb 1\{b=A_t\}-\pi$；真正的“policy 的梯度”是 $\nabla J(\theta)$：它等于整条 episode 上各时刻 $\gamma^tG_t\nabla\log\pi(A_t\mid S_t)$ **之和**的期望；若整条 episode 的 score 都在采样时的参数处计算，各时刻的项加起来就是一个无偏的梯度样本；课件和本站的算法在 episode 内逐个时刻更新 θ，是常用的近似。）
 - **Monte Carlo return** $G_t$：这个动作有多好。
 
 直觉：return 为正，就提高被选动作的概率；为负则降低。
@@ -290,7 +302,7 @@ $$\nabla_{\boldsymbol\theta}J(\boldsymbol\theta)=\mathbb E_{\pi_\theta}\big[q^{\
 **参数共享**：若其他状态也用到这些特征，它们的动作概率也会随之改变——泛化，也可能是干扰（和 W9 一样）。
 
 :::warn 一个 bias 陷阱
-在价值近似里，加常数特征可以修复零预测。但在 softmax policy 里，如果给**所有动作**加同一个、共享权重的常数特征，它只会把所有偏好平移同一个数，在 softmax 中完全抵消；该坐标的梯度也是 $1-\sum_b\pi_b=0$。要学动作之间的基线差异，需要**动作相关**的偏置。
+在价值近似里，若某状态特征全为 0，预测恒为 0，加一个恒为 1 的特征就能修复。但在 softmax policy 里，如果给**所有动作**加同一个、共享权重的常数特征，它只会把所有偏好平移同一个数，在 softmax 中完全抵消；该坐标的梯度也是 $1-\sum_b\pi_b=0$。要学动作之间的基线差异，需要**动作相关**的偏置，例如为每个动作 $a_k$ 加一个特征 $\mathbb 1\{a=a_k\}$，各自有权重。
 :::
 `,
     math: R`
@@ -300,11 +312,13 @@ $$\nabla_{\boldsymbol\theta}J(\boldsymbol\theta)=\mathbb E_{\pi_\theta}\big[q^{\
 $$\nabla J=\sum_\tau p_\theta(\tau)\,\nabla\log p_\theta(\tau)\,G_0(\tau)=\mathbb E_\tau\big[\nabla\log p_\theta(\tau)\,G_0(\tau)\big]$$
 轨迹概率是每一步概率的连乘 $p_\theta(\tau)=p(s_0)\prod_t\pi_\theta(A_t\mid S_t)\,p(S_{t+1}\mid S_t,A_t)$，取 log 后连乘变成求和：
 $$\nabla\log p_\theta(\tau)=\sum_t\nabla\log\pi_\theta(A_t\mid S_t)$$
-（$p(s_0)$ 和 $p(s'\mid s,a)$ 不依赖 θ，求导后消失。）下一步去掉“过去的奖励”。把 $G_0$ 拆成 $C_t+\gamma^tG_t$，$C_t=R_1+\gamma R_2+\dots+\gamma^{t-1}R_t$ 是时刻 $t$ 之前已经拿到的奖励。记 $g_t=\nabla\log\pi_\theta(A_t\mid S_t)$。在 $A_t$ 被选出之前，$C_t$ 和 $S_t$ 都已经确定，而 $A_t$ 按 $\pi_\theta(\cdot\mid S_t)$ 抽样，所以
+（$p(s_0)$ 和 $p(s'\mid s,a)$ 不依赖 θ，求导后消失。）记 $g_t=\nabla\log\pi_\theta(A_t\mid S_t)$，代回上式：$\nabla J=\mathbb E\big[(\sum_tg_t)G_0\big]=\sum_t\mathbb E[g_tG_0]$。这已经是对的，但每一步的 $g_t$ 都乘上了整条 $G_0$，混进了这一步动作影响不了的奖励，只增加噪声。下一步去掉这些“过去的奖励”。把 $G_0$ 拆成 $C_t+\gamma^tG_t$，$C_t=R_1+\gamma R_2+\dots+\gamma^{t-1}R_t$ 是时刻 $t$ 之前已经拿到的奖励。在 $A_t$ 被选出之前，$C_t$ 和 $S_t$ 都已经确定，而 $A_t$ 按 $\pi_\theta(\cdot\mid S_t)$ 抽样，所以
 $$\begin{aligned}\mathbb E[g_t\mid\text{过去}]&=\sum_a\pi_\theta(a\mid S_t)\nabla\log\pi_\theta(a\mid S_t)=\sum_a\nabla\pi_\theta(a\mid S_t)\\&=\nabla\sum_a\pi_\theta(a\mid S_t)=\nabla1=0,\end{aligned}$$
-因此 $\mathbb E[C_t\,g_t]=0$：过去的奖励乘上这一步的 score，平均为 0。只剩 $\gamma^tG_t$，得到 discounted episodic 形式：
+给定过去时 $C_t$ 是已知的数，可以提到期望外面：$\mathbb E[C_tg_t\mid\text{过去}]=C_t\cdot\mathbb E[g_t\mid\text{过去}]=0$；再对所有可能的过去取平均，仍是 0。因此 $\mathbb E[C_t\,g_t]=0$：过去的奖励乘上这一步的 score，平均为 0。只剩 $\gamma^tG_t$，得到 discounted episodic 形式：
 $$\nabla_\theta J(\theta)=\mathbb E\Big[\sum_{t=0}^{T-1}\gamma^tG_t\nabla_\theta\log\pi_\theta(A_t\mid S_t)\Big]$$
 给定 $S_t=s,A_t=a$ 时 $G_t$ 的条件期望正是 $q^{\pi_\theta}(s,a)$——这就是定理里出现 $q$ 的原因。REINFORCE 用一个样本 $G_t$ 代替它。
+
+（选读：定理里 $\mathbb E_{\pi_\theta}$ 的严格写法是按折扣占用度 $d_\gamma(s)=\sum_t\gamma^tP(S_t=s,\ t<T)$ 加权求和：$\nabla J=\sum_sd_\gamma(s)\sum_a\pi(a\mid s)q^\pi(s,a)\nabla\log\pi(a\mid s)$。考试按课件的期望写法即可。）
 
 **线性 softmax 的梯度**：$\log\pi(a\mid s)=\theta^\top f(s,a)-\log\sum_be^{\theta^\top f(s,b)}$，对 $\theta$ 的第 $i$ 个坐标求导：$\partial e^{\theta^\top f(s,b)}/\partial\theta_i=e^{\theta^\top f(s,b)}f_i(s,b)$（指数的导数是它自己，再乘上指数里 $\theta_i$ 的系数 $f_i(s,b)$），所以 $\partial\log\pi(a\mid s)/\partial\theta_i=f_i(s,a)-\sum_b\pi(b\mid s)f_i(s,b)$。把所有坐标叠成向量：
 $$\nabla_\theta\log\pi_\theta(a\mid s)=f(s,a)-\frac{\sum_be^{\theta^\top f(s,b)}f(s,b)}{\sum_be^{\theta^\top f(s,b)}}=f(s,a)-\sum_b\pi_\theta(b\mid s)f(s,b)$$
@@ -326,7 +340,7 @@ $$\nabla_\theta\log\pi_\theta(a\mid s)=f(s,a)-\frac{\sum_be^{\theta^\top f(s,b)}
       parts: [
         { key: 'grad', label: '要求的：J 对 θ 的梯度', color: 'blue', text: '沿这个方向改 θ，期望回报上升最快。' },
         { key: 'e', label: '在当前 policy 下的期望', color: 'gray', text: '按当前 policy 访问状态、选择动作的频率加权（包括折扣），所以可以用采样估计。不是对所有状态均匀平均。' },
-        { key: 'q', label: '动作价值 q^{π_θ}(s,a)', color: 'green', text: '“这个动作有多好”。REINFORCE 用 Monte Carlo return $G_t$ 作为它的无偏样本。' },
+        { key: 'q', label: '动作价值 q^{π_θ}(s,a)', color: 'green', text: '在 $s$ 选 $a$、之后一直按 $\\pi_\\theta$ 走的期望回报（就是前面的 $q_\\pi(s,a)$，policy 换成 $\\pi_\\theta$）：“这个动作有多好”。REINFORCE 用 Monte Carlo return $G_t$ 作为它的无偏样本。' },
         { key: 'score', label: '∇ log π（score function）', color: 'orange', text: '要求 policy 可微。softmax 偏好时：tabular 为 $\\mathbb 1\\{b=a\\}-\\pi(b\\mid s)$；线性为 $f(s,a)-\\sum_b\\pi(b\\mid s)f(s,b)$。' }
       ]
     }, {
@@ -342,7 +356,7 @@ $$\nabla_\theta\log\pi_\theta(a\mid s)=f(s,a)-\frac{\sum_be^{\theta^\top f(s,b)}
 
 平均特征 $=0.5[1,0]+0.5[0,1]=[0.5,0.5]$；梯度 $=[0,1]-[0.5,0.5]=[-0.5,0.5]$；新 $\boldsymbol\theta=[-0.05,0.05]$——与第 27 章 tabular 的结果完全相同。
 
-**共享特征**：三个动作 $f(a_1)=[1,0]$，$f(a_2)=[0,1]$，$f(a_3)=[1,1]$，$\boldsymbol\theta=[0.5,-0.5]$。偏好 $h=(0.5,-0.5,0)$，$\pi\approx(0.506,0.186,0.307)$。选 $a_1$：平均特征 $=(0.506+0.307,\ 0.186+0.307)\approx(0.814,0.494)$，梯度 $=(1,0)-(0.814,0.494)=(0.186,-0.494)$。更新会同时改变三个动作的偏好，因为 $a_3$ 与 $a_1$、$a_2$ 共享特征。
+**共享特征**：三个动作 $f(a_1)=[1,0]$，$f(a_2)=[0,1]$，$f(a_3)=[1,1]$，$\boldsymbol\theta=[0.5,-0.5]$。偏好 $h=(0.5,-0.5,0)$，$\pi\approx(0.506,0.186,0.307)$。选 $a_1$：平均特征 $=(0.506+0.307,\ 0.186+0.307)\approx(0.814,0.494)$，梯度 $=(1,0)-(0.814,0.494)=(0.186,-0.494)$。更新会同时改变三个动作的偏好，因为 $a_3$ 与 $a_1$、$a_2$ 共享特征。取 $\alpha=0.2$、$G=1$：$\Delta\boldsymbol\theta=(0.037,-0.099)$。共享特征下 $h(a_3)=\theta_1+\theta_2=h(a_1)+h(a_2)$ 永远成立——三个偏好只有两个旋钮：$\Delta h=(+0.037,-0.099,-0.062)$，$\pi$ 变成 $(0.535,0.172,0.294)$。$a_3$ 反而下降：$\theta_1$ 升让它加分，$\theta_2$ 降得更多让它减分。（对比 tabular，同样起点，$a_1$ 会升 0.099、$a_2$ 只降 0.037；共享之后 $a_1$ 升得少、$a_2$ 降得多。）
 
 **价值学习 vs 策略学习的“学习信号”（W10 slide 30）**
 
@@ -350,7 +364,7 @@ $$\nabla_\theta\log\pi_\theta(a\mid s)=f(s,a)-\frac{\sum_be^{\theta^\top f(s,b)}
 |---|---|---|
 | 估计 | $q_{\text{est}}=Q(s,a)$ 或 $\hat Q(s,a;\mathbf w)$ | 偏好 $h_\theta(s,a)$ 定义动作分布 |
 | target | MC：$G_t$；SARSA：$r+\gamma q_{\text{est}}(s',a')$；Q-learning：$r+\gamma\max_bq_{\text{est}}(s',b)$ | — |
-| 学习信号 | $\delta_t=Y_t-q_{\text{est}}(s,a)$ | return $G_t$ 缩放 log-policy 梯度 |
+| 学习信号 | $\delta_t=Y_t-q_{\text{est}}(s,a)$ | return $G_t$ 缩放 log-policy 梯度（即 $\nabla\log\pi$，score） |
 | tabular 更新 | $Q(s,a)\leftarrow Q+\alpha\delta_t$ | $\theta$ 就是表 $h(s,a)$ |
 | 近似更新 | $\mathbf w\leftarrow\mathbf w+\alpha\delta_t\nabla_{\mathbf w}\hat Q$（$Y_t$ 视为常数） | $\theta$ 是 $h_\theta(s,a)=\hat h(s,a;\theta)$ 的共享参数 |
 
@@ -360,7 +374,7 @@ $$\nabla_\theta\log\pi_\theta(a\mid s)=f(s,a)-\frac{\sum_be^{\theta^\top f(s,b)}
 **怎么用**：
 
 1. 选“one-hot 特征”（切换时 θ 会重置为全 0），选 a₁，G=1：梯度就是 $\mathbb 1\{b=a\}-\pi$，与第 27 章完全一致。
-2. 切到“线性特征（共享）”（θ 重置为例题里的 (0.5, −0.5)）：a₃ 的特征 (1,1) 与 a₁、a₂ 都重叠。选 a₁ 更新后，看 a₃ 的概率怎样跟着变。
+2. 切到“线性特征（2 维，共享）”（θ 重置为例题里的 (0.5, −0.5)，α 默认 0.2）：a₃ 的特征 (1,1) 与 a₁、a₂ 都重叠。选 a₁，看“更新前 / 更新后”表：a₃ 的概率 0.307 → 0.294，反而下降（原因见例题）。滑块“G（已含 γᵗ）”的值就是 $\gamma^tG_t$。
 3. 把 G 改成负数：梯度方向不变，更新方向反过来。` },
     compare: R`
 | 方法 | 存储/参数化的对象 | 一次经验提供什么 | 改变什么 |
@@ -377,7 +391,7 @@ $$\nabla_\theta\log\pi_\theta(a\mid s)=f(s,a)-\frac{\sum_be^{\theta^\top f(s,b)}
       { wrong: 'REINFORCE 的更新是梯度下降。', right: '是对期望回报的梯度**上升**（加号）；value learning 才是对平方误差做梯度下降。' },
       { wrong: '线性 policy 的 $h=\\theta^\\top f$ 也是价值估计。', right: '形式与线性 Q 相同，但 h 只是偏好，用来塑造动作概率。' },
       { wrong: '给所有动作加一个共享的常数特征，就能学到动作的基线差异。', right: '共享常数只平移所有偏好，在 softmax 中抵消，梯度为 0。需要动作相关的偏置。' },
-      { wrong: '直接学 policy 就不需要探索，也没有方差问题。', right: 'REINFORCE 仍需足够采样，完整 episode 的 return 方差也可能很大。' }
+      { wrong: '直接学 policy 就不需要探索，也没有方差问题。', right: 'REINFORCE 靠按自己的 softmax 抽样来探索；若某个动作的概率过早被推到接近 1，其他动作几乎不再被试，等于停止探索。$G_t$ 包含整条轨迹的随机性，方差大，需要很多 episode 平均。' }
     ],
     quiz: [
       { kind: '公式计算', q: 'one-hot 特征、两动作、$\\theta=[0,0]$，选第 2 个动作。$\\nabla_\\theta\\log\\pi$ 的第 1 个分量？', answer: -0.5, tol: 0.001, explain: '$[0,1]-[0.5,0.5]=[-0.5,0.5]$。' },

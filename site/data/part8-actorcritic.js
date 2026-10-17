@@ -64,7 +64,7 @@
 - 奖励 $r(s_0,A,s_{t1})=101$，$r(s_0,B,s_{t2})=99$。所以 **A 才是更好的动作**。
 - 每条 episode 只有一步，$G_0$ 就等于这一步的奖励；偏好 $h(s_0,A)=h(s_0,B)=0$ 起步，policy 是两者的 softmax，$\alpha=0.1$。
 
-两个动作时 softmax 可以写成 $\pi(A\mid s_0)=\dfrac{1}{1+e^{\,h(s_0,B)-h(s_0,A)}}$——只取决于两个偏好的**差**。
+两个动作时 softmax 可以写成 $\pi(A\mid s_0)=\dfrac{1}{1+e^{\,h(s_0,B)-h(s_0,A)}}$（分子分母同除以 $e^{h(s_0,A)}$）——只取决于两个偏好的**差**。
 `,
     why: R`
 **问题从哪里来：两张 sample-efficiency 图（W10-2 slides 4–5）**
@@ -88,7 +88,7 @@
 1. **第一次碰巧选了 B**（概率 0.5）：增量 $0.1\times99\times0.5=4.95$，偏好变成 $(-4.95,+4.95)$，差为 9.9，$\pi(B)\approx0.99995$。一次更新就几乎把 policy 定死在**较差**的动作上。为什么 9.9 算“很大”：两个动作时偏好差 $d$ 对应 $\pi=1/(1+e^{-d})$，差 2.2 已是 90%，差 4.6 是 99%（$e^{4.6}\approx100$），差 9.9 就是 99.995%。一步 $\alpha G_0=9.9$ 就跨过了整个“还能学”的区间。
 2. **饱和（saturation）**：之后再选 B，梯度项 $1-\pi(B)\approx0.00005$，每次只动 $0.1\times99\times0.00005\approx0.0005$，而且 $\pi(A)$ 越来越小，增量也从 0.000497 慢慢降到 0.000453。99 次累加约 0.047，所以 100 条 episode 之后偏好也只从 4.95 挪到 $\pm4.9969$。
 3. **A 几乎不会被采样到**：每条 episode 选 A 的概率约 0.00005，100 条里一次都选不到 A 的概率约 $0.99995^{100}\approx0.995$。不采样到 A，就永远不知道 A 更好。
-4. **人工强制选一次 A**（E101，$G_0=101$）：被选动作 A 的梯度项是 $1-0.00005\approx0.99995$，增量约 $0.1\times101\times1=10.1$，偏好一下子翻到 $(+5.10,-5.10)$，$\pi(A)\approx0.99996$。一条样本就让 policy 从一个极端跳到另一个极端。（“强制选某个动作”只是为了演示更新的算术：动作不是按当前 policy 抽样的，所以这些强制更新不能当作普通 REINFORCE 的梯度样本来理解。）课件中“强制 B、A、B、A …交替”的图里，偏好每条 episode 跳约 10：$h(s_0,A)$ 在约 +8 和 −2 之间来回（$h(s_0,B)$ 正好相反），说明更新完全被单条样本支配。
+4. **人工强制选一次 A**（E101，$G_0=101$）：被选动作 A 的梯度项是 $1-0.00005\approx0.99995$，增量约 $0.1\times101\times1=10.1$，偏好一下子翻到 $(+5.10,-5.10)$，$\pi(A)\approx0.99996$。一条样本就让 policy 从一个极端跳到另一个极端。（“强制选某个动作”只是为了演示更新的算术：动作不是按当前 policy 抽样的，所以这些强制更新不能当作普通 REINFORCE 的梯度样本来理解。）课件中“强制 B、A、B、A …交替”的图里，偏好每条 episode 跳约 10：起初在 ±5 附近，每一对 B、A 净往 A 挪 0.2（+10.1 比 −9.9 多 0.2），约 30 条后稳定在 $h(s_0,A)$ 约 +8 和 −2 之间来回（$h(s_0,B)$ 正好相反），说明更新完全被单条样本支配。
 
 **把奖励换成 +1 / −1** 后：选 B 得到 $G_0=-1$，B 的偏好**下降**、A 的上升；选 A 得到 $+1$，A 的偏好上升。无论采样到哪个动作，更新方向都是“往 A 走”。一开始（$\pi=(0.5,0.5)$）每步正好 0.05；之后幅度随 policy 变化——选 A（$G_0=+1$）时 $\Delta h(s_0,A)=0.1\times1\times(1-\pi(A))$；选 B（$G_0=-1$）时 $\Delta h(s_0,A)=0.1\times(-1)\times(0-\pi(A))=0.1\,\pi(A)$。随着 $\pi(A)$ 变大，前者越来越小；B 也越来越少被选到。每步都很小，曲线平稳上升（课件的一次运行：100 条中 86 次选 A，最终 $h=\pm1.86$，$\pi(A)=0.9765$）。
 `,
@@ -128,8 +128,8 @@ $$\frac{\partial\log\pi(a\mid s_0)}{\partial h(s_0,j)}=\mathbb 1\{j=a\}-\pi(j\mi
 
 1. 奖励选“A = 101, B = 99”，baseline 选“无”。点一次“强制选 B”：核对表中的 −4.95 / +4.95 和 $\pi(A)\approx0.00005$（E1）。再点一次：增量只有 ±0.000497（E2）。
 2. 点“一直强制 B 到第 100 条”：偏好只从 4.95 挪到 4.9969——饱和（按 policy 采样时，100 条里几乎也全是 B）。然后点“强制选 A”：这正是 E101，偏好一下子翻转成 ±5.1026。
-3. Reset 后点“从 B 开始交替 B, A, B, A …”：偏好曲线每条 episode 跳约 10，$h(s_0,A)$ 在约 +8 和 −2 之间来回，$h(s_0,B)$ 相反——每一次都是一条样本就把 policy 推到另一端。
-4. 奖励切到“+1 / −1”，Reset 后“采样 100 条”：两条曲线平稳分开，A 越来越常被选。` },
+3. 点“重置”后点“从 B 开始交替 B, A, B, A …”：偏好曲线每条 episode 跳约 10，起初在 ±5 附近，约 30 条后 $h(s_0,A)$ 在约 +8 和 −2 之间来回，$h(s_0,B)$ 相反——每一次都是一条样本就把 policy 推到另一端。
+4. 奖励切到“+1 / −1”（切换奖励或 baseline 时会自动重置），“采样 100 条”：两条曲线平稳分开，A 越来越常被选。` },
     compare: R`
 | | 奖励 101 / 99 | 奖励 +1 / −1 |
 |---|---|---|
@@ -143,7 +143,7 @@ $$\frac{\partial\log\pi(a\mid s_0)}{\partial h(s_0,j)}=\mathbb 1\{j=a\}-\pi(j\mi
       { wrong: 'REINFORCE 学错了，是因为它的梯度估计有偏。', right: '它的期望更新是正确的（两个版本期望都是 +0.05，朝 A）。问题是**方差**：单条样本的更新太大，第一步就把 policy 推到饱和。' },
       { wrong: '选了 B 并拿到正回报，所以 B 一定是好动作。', right: '回报的绝对值不能说明动作好坏。A 给 101、B 给 99，B 的回报虽然为正，却比 A 差。需要和“平常水平”比较。' },
       { wrong: '饱和以后只要多训练几条 episode，就会慢慢改过来。', right: '$\\pi(B)\\approx0.99995$ 时，梯度项 $1-\\pi(B)\\approx0.00005$，A 几乎采样不到；100 条后偏好只从 4.95 变到 4.9969。没有人工干预，要非常久才能学到 A。' },
-      { wrong: '把学习率调大就能学得更快。', right: '课件：大学习率可能发散（一次更新就跳到极端），小学习率学得慢。学习率不能解决“信号尺度不对”的问题。' }
+      { wrong: '把学习率调大就能学得更快。', right: '课件：大学习率可能发散（一次更新就跳到极端），小学习率学得慢。学习率不能解决“信号尺度不对”的问题：把 α 缩小 100 倍到 0.001，单次更新变成 +0.0505 或 −0.0495，不再饱和；但期望也同比缩成 0.0005，噪声与期望之比仍是 100 : 1，要平均上万条样本才看得出方向。减 baseline 才是只删噪声、不动期望。' }
     ],
     quiz: [
       { kind: '公式计算', q: '机器人例子：$h(s_0,A)=h(s_0,B)=0$，$\\alpha=0.1$。第一条 episode 选 B，$G_0=99$。更新后 $h(s_0,A)$ 是多少？', answer: -4.95, tol: 0.001, explain: '$A$ 不是被选动作，梯度项 $0-\\pi(A)=-0.5$。$\\Delta h=0.1\\times99\\times(-0.5)=-4.95$，所以 $h(s_0,A)=0-4.95=-4.95$。' },
@@ -180,11 +180,11 @@ $$\begin{aligned}\mathbb E_{A\sim\pi}\big[b(s)\,\nabla\log\pi(A\mid s)\big]&=b(s
 (1) 期望就是按概率加权求和；$b(s)$ 与 $a$ 无关，可以提到外面。(2) $\nabla\log\pi=\nabla\pi/\pi$，$\pi$ 约掉。(3) 有限项求和，可以逐项求导。(4) 概率加起来恒为 1，常数的导数是 0。
 每个状态都成立。整体的期望是先按“走到 $S_t=s$ 的频率”平均、再按 $A_t\sim\pi$ 平均；里面这一层已经是 0，总和也就是 0。所以 $\mathbb E\big[(G_t-b)\nabla\log\pi\big]=\mathbb E\big[G_t\nabla\log\pi\big]$：**期望梯度不变**。tabular 时也能直接验证：固定被求导的偏好分量 $j$，对**采样到的动作** $a$ 按 $\pi(a)$ 加权求和，$\sum_a\pi(a)\big[\mathbb 1\{j=a\}-\pi(j)\big]=\pi(j)-\pi(j)\sum_a\pi(a)=\pi(j)-\pi(j)=0$。
 
-**为什么通常能降低方差**：把更新量拆成两项：$G_t\nabla\log\pi=(G_t-c)\nabla\log\pi+c\,\nabla\log\pi$。第二项的期望是 0（上面刚证明），但它的大小跟着 $c$ 走：score $\nabla\log\pi$ 随抽到的动作正负跳动，乘上一个大常数 $c$ 就是一个**纯噪声项**。减去 baseline，就是把这一项删掉。机器人在 $\pi=(0.5,0.5)$ 时：$+5.05=0.05+5$，$-4.95=0.05-5$，那 ±5 就是 $c=100$ 带来的噪声，减去 100 后只剩 0.05。
+**为什么通常能降低方差**：把更新量拆成两项：$G_t\nabla\log\pi=(G_t-c)\nabla\log\pi+c\,\nabla\log\pi$。第二项的期望是 0（上面刚证明），但它的大小跟着 $c$ 走：score $\nabla\log\pi$ 随抽到的动作正负跳动，乘上一个大常数 $c$ 就是一个**纯噪声项**。减去 baseline，就是把这一项删掉。机器人在 $\pi=(0.5,0.5)$ 时（乘上 $\alpha=0.1$ 后）：$+5.05=0.05+5$，$-4.95=0.05-5$，那 ±5 就是 $c=100$ 带来的噪声，减去 100 后只剩 0.05。
 
-一般地，要看的是整个更新量 $(G_t-b)\nabla\log\pi$ 的方差，而不只是 $G_t$。当回报整体偏离 0 很远时（如机器人的约 100），不减 baseline 的更新量主要由这个“整体偏移”决定，忽大忽小；选一个接近这个状态平均回报 $v^\pi(s)=\mathbb E[G_t\mid S_t=s]$ 的 $b(s)$，$G_t-b(s)$ 有正有负、数值小：比平常好的动作被强化，比平常差的被削弱。这是“通常”而不是“保证”：某些 policy 和奖励下，减去准确的 $v^\pi$ 反而可能让方差变大（要压低的是乘积 $(G_t-b)\nabla\log\pi$ 的方差；$G_t$ 与 $\nabla\log\pi$ 相关时，让乘积方差最小的 $b$ 不一定正好是 $v^\pi$，细节超出本课）；期望不变则是一定成立的。机器人例子中给定 $b=100$，信号从 101/99 变成 +1/−1：选 A 得 +1（A 被强化），选 B 得 −1（B 被削弱），无论采样到哪个动作都朝 A 走。一开始（$\pi(A)=0.5$）每步正好 0.05，之后幅度随 policy 和所选动作变化：选 A 时 $\Delta h_A=0.1\,(1-\pi(A))$，选 B 时 $\Delta h_A=0.1\,\pi(A)$（例如 $\pi(A)=0.9$ 时分别是 0.01 和 0.09），都很小，学习平稳。
+一般地，选一个接近该状态平均回报 $v^\pi(s)=\mathbb E[G_t\mid S_t=s]$ 的 $b(s)$，$G_t-b(s)$ 有正有负、数值小：比平常好的动作被强化，比平常差的被削弱。这是“通常”而不是“保证”：少数情况下减去准确的 $v^\pi$ 反而让方差略增（超出本课）；期望不变则一定成立。机器人中给定 $b=100$，信号从 101/99 变成 +1/−1，每步更新只有 0.05 左右，学习平稳。
 
-**如果 baseline 依赖动作**（例如 $b=Q(s,a)$），上面的求和里 $b$ 不能提到外面，$\mathbb E[b(s,A)\nabla\log\pi(A\mid s)]$ 一般不再为 0，期望梯度可能被改变——这时需要另外的论证。actor-critic 中常见的 $Q(s,a)-V(s)$ 没有这个问题：被减掉的 $V(s)$ 仍然只依赖状态。
+**如果 baseline 依赖动作**（例如 $b=Q(s,a)$），上面的求和里 $b$ 不能提到外面，$\mathbb E[b(s,A)\nabla\log\pi(A\mid s)]$ 一般不再为 0，期望梯度可能被改变——这时需要另外的论证。actor-critic 中常见的 $Q(s,a)-V(s)$ 没有这个问题：这里 $Q(s,a)$ 是代替 $G_t$ 的评价信号（估计 $q^\pi$），不是 baseline；被减掉的 baseline 只有 $V(s)$，它只依赖状态。
 `,
     intuition: R`
 **learned baseline 的“慢热”**：baseline 从 0 开始，第一条 episode 的 $\delta=99-0=99$，和不带 baseline 时完全一样，所以**第一步照样饱和**到 B。之后 baseline 逐渐学到“这里平常能拿 99”，$\delta$ 从 99 降到 89.1、80.19……越来越接近 0，后面的更新越来越小。
@@ -221,8 +221,8 @@ $b_0=0$，所以 $b_k=99(1-0.9^k)$：$b_1=9.9$，$b_2=18.81$，$b_{100}=99(1-0.9
 
 1. baseline 选“learned b(s0)，初值 0”。点“强制选 B”两次：核对 δ = 99 → 89.1，b = 9.9 → 18.81，以及 E2 的 −4.950447。
 2. 再点“采样 100 条”：b 逐渐接近 99，偏好几乎不变（饱和没有被撤销）。
-3. baseline 切到“给定 b = 100”，Reset 后“采样 100 条”：信号变成 +1 / −1，学习平稳地走向 A——和把奖励换成 +1 / −1 的效果一样。
-4. 对比“learned”与“给定”两条偏好曲线：baseline 的价值取决于它**何时**变准。` },
+3. baseline 切到“给定 b = 100”（会自动重置），“采样 100 条”：信号变成 +1 / −1，学习平稳地走向 A——和把奖励换成 +1 / −1 的效果一样。
+4. 两种 baseline 的曲线不能叠在一起看，按顺序对比：先在 learned 下采样 100 条，记住曲线——E1 就跳到 ±4.95，之后几乎是水平线；再切到给定 b = 100，采样 100 条——曲线从 0 平稳分开。给定的 b 从第一步就准；learned b 要几十条才接近 99，而 policy 第一步就已饱和，baseline 来得太晚。baseline 的价值取决于它**何时**变准。` },
     compare: R`
 | | REINFORCE | REINFORCE + 给定 baseline | REINFORCE + learned baseline |
 |---|---|---|---|
@@ -246,7 +246,7 @@ $b_0=0$，所以 $b_k=99(1-0.9^k)$：$b_1=9.9$，$b_2=18.81$，$b_{100}=99(1-0.9
       { kind: '公式计算', q: '机器人例子，learned baseline，$\\beta=0.1$。E2 开始时 $b(s_0)=9.9$，E2 选 B 得 $G_0=99$。E2 之后 $b(s_0)$ 是多少？', answer: 18.81, tol: 0.001, explain: '$b_{\\text{new}}=9.9+0.1\\times89.1=18.81$。' },
       { kind: '公式计算', q: '机器人例子，learned baseline 从 0 开始，$\\beta=0.1$，每条 episode 都选 B 得 99。第 3 条 episode 之后 $b(s_0)$ 是多少？', answer: 26.829, tol: 0.001, explain: '$b_k=99(1-0.9^k)$，$b_3=99\\times(1-0.729)=26.829$。也可以逐步算：$18.81+0.1\\times(99-18.81)=26.829$。' },
       { kind: '概念判断', q: '下列哪个 baseline **不能一般地保证** policy gradient 的期望不变？', options: ['$b(s)=0$', '$b(s)=V(s)$ 的任意估计', '$b(s,a)$：依赖所选动作的函数', '$b(s)=100$'], answer: 2, explain: '证明中把 $b(s)$ 提到 $\\sum_a$ 外面才得到 0；依赖动作时不能提出来，$\\mathbb E[b(s,A)\\nabla\\log\\pi]$ 一般不为 0。', why: ['常数 0 当然不改变。', '任何只依赖状态的函数都不改变期望，不管它准不准。', '正确。', '常数也只依赖状态。'] },
-      { kind: '概念判断', q: '机器人例子中，learned baseline 的第一次更新为什么和不带 baseline 的 REINFORCE 完全相同？', options: ['因为 α = β', '因为 baseline 初值为 0，δ = G₀ − 0 = G₀', '因为只有两个动作', '因为第一次选的是 B'], answer: 1, explain: '课件 slide 27：“The first policy update is identical to REINFORCE without a baseline, because the baseline starts at zero.”' }
+      { kind: '概念判断', q: '机器人例子中，learned baseline 的第一次更新为什么和不带 baseline 的 REINFORCE 完全相同？', options: ['因为 α = β', '因为 baseline 初值为 0，δ = G₀ − 0 = G₀', '因为只有两个动作', '因为第一次选的是 B'], answer: 1, explain: 'b 初值为 0，$\\delta=G_0-0=99=G_0$，所以更新式和不带 baseline 时完全相同（课件 slide 27 也这样说）。' }
     ],
     source: 'W10-2 slides 25–32（REINFORCE with baseline、tabular / 近似的 baseline 更新、learned baseline 规则、E1/E2/E100、偏好曲线与说明）、43（“与动作无关的 baseline 保持期望梯度”）。'
   },
@@ -263,7 +263,7 @@ $b_0=0$，所以 $b_k=99(1-0.9^k)$：$b_1=9.9$，$b_2=18.81$，$b_{100}=99(1-0.9
 - **Critic** 是价值函数，负责评价 actor 选的动作。tabular：$V(s)$ 或 $Q(s,a)$；近似：$V_{\mathbf w}(s)$ 或 $Q_{\mathbf w}(s,a)$。
 - 例子：REINFORCE with baseline、A2C 等。
 
-记号：$g_t=\nabla_\theta\log\pi_\theta(a_t\mid s_t)$（score function）。课件用 continuing-task 的写法；episodic、从起点计时的严格版本还要给 actor 的 $g_t$ 乘上 $\gamma^t$。
+记号：$g_t=\nabla_\theta\log\pi_\theta(a_t\mid s_t)$（score function）。课件的写法里 actor 不乘 $\gamma^t$（把每个时刻都当作新的起点来评价，持续任务通常这样写）；episodic、从起点计时的严格版本还要给 actor 的 $g_t$ 乘上 $\gamma^t$。
 
 **从 learned baseline 到 bootstrapped critic（slide 35）**
 
@@ -294,7 +294,7 @@ $n=1$ 就是一步 TD actor–critic；遇到终止就停在终止处，不加 b
 
 **TD(λ) actor–critic（slide 40）**：用资格迹（eligibility traces）把当前的 δ 也分给更早的决策：
 $$\begin{gathered}e^V_t=\gamma\lambda_Ve^V_{t-1}+\nabla_{\mathbf w}V_{\mathbf w}(s_t)\\e^\pi_t=\gamma\lambda_\pi e^\pi_{t-1}+g_t\\\delta_t=r_{t+1}+\gamma V_{\mathbf w}(s_{t+1})-V_{\mathbf w}(s_t)\\\mathbf w\leftarrow\mathbf w+\beta\delta_te^V_t\\\theta\leftarrow\theta+\alpha\delta_te^\pi_t\end{gathered}$$
-迹初始化为 0，每个 episode 之间重置；$\lambda_V=\lambda_\pi=0$ 时退化为一步更新。
+迹初始化为 0，每个 episode 之间重置；$\lambda_V=\lambda_\pi=0$ 时退化为一步更新。$\lambda_V$、$\lambda_\pi$ 分别控制 critic 和 actor 的迹衰减多快，可以分开设；λ 越大，功劳往回传得越远，和 W8 TD(λ) 里 λ 的含义相同。
 `,
     why: R`
 **为什么要把两者结合（slide 23 的总结）**
@@ -314,15 +314,15 @@ actor-critic 保留 policy-based 的“直接学（随机）policy”，再借 v
 $$\mathbb E[\delta_t\mid s_t=s,a_t=a]=\mathbb E\big[r_{t+1}+\gamma v^\pi(s_{t+1})\mid s,a\big]-v^\pi(s)=q^\pi(s,a)-v^\pi(s)=A^\pi(s,a).$$
 第一步用了 $q^\pi$ 的 Bellman 定义：在 $s$ 做 $a$，得到即时奖励再按 $\pi$ 继续，期望就是 $q^\pi(s,a)$。所以**一个 TD error 同时训练 actor 和 critic**：critic 用它修正 $V$，actor 用它当“这个动作比平常好多少”的样本。$V_{\mathbf w}$ 有近似误差时，这个优势估计会有偏差。
 
-**为什么这几种 actor 都还是在做 policy gradient**：Policy Gradient Theorem 给出 $\nabla J=\mathbb E[q^\pi(s,a)\,g]$。减去只依赖状态的 $v^\pi(s)$ 期望不变（上一章的 baseline 证明），于是 $\nabla J=\mathbb E[A^\pi(s,a)\,g]$；又因为 $g$ 只由 $(s,a)$ 决定、$\mathbb E[\delta\mid s,a]=A^\pi(s,a)$，所以 $\nabla J=\mathbb E[\delta\,g]$。因此：Q actor–critic 用 $Q_{\mathbf w}$ 近似 $q^\pi$；A2C 用 $Q_{\mathbf w}-V_{\mathbf w}$ 近似 $A^\pi$；TD actor–critic 用 δ 当 $A^\pi$ 的单个样本。critic 准确时三者的期望相同，区别在方差，以及 critic 不准时带来的偏差。
+**为什么这几种 actor 都还是在做 policy gradient**：Policy Gradient Theorem 给出 $\nabla J=\mathbb E[q^\pi(s,a)\,g]$。减去只依赖状态的 $v^\pi(s)$ 期望不变（上一章的 baseline 证明），于是 $\nabla J=\mathbb E[A^\pi(s,a)\,g]$；再把 $A^\pi$ 换成 δ：先固定 $(s,a)$，这时 $g$ 是一个确定的向量，可以提到期望外面，$\mathbb E[\delta\,g\mid s,a]=\mathbb E[\delta\mid s,a]\,g=A^\pi(s,a)\,g$；再按 policy 对 $(s,a)$ 平均，得到 $\mathbb E[\delta\,g]=\mathbb E[A^\pi g]=\nabla J$。这和 REINFORCE 用 $G_t$ 代替 $q^\pi$ 是同一个道理：给定 $(s,a)$ 时，$G_t$ 的平均就是 $q^\pi$。因此：Q actor–critic 用 $Q_{\mathbf w}$ 近似 $q^\pi$；A2C 用 $Q_{\mathbf w}-V_{\mathbf w}$ 近似 $A^\pi$；TD actor–critic 用 δ 当 $A^\pi$ 的单个样本。critic 准确时三者的期望相同，区别在方差，以及 critic 不准时带来的偏差。
 
 **偏差—方差折中**（和 W8 的 n-step / TD(λ) 一样）：
 
-- $G_t-V(s_t)$（REINFORCE with baseline）：用完整回报，不依赖 critic 是否准确，但要等 episode 结束，噪声大。
+- $G_t-V(s_t)$（REINFORCE with baseline）：用完整回报，$V$ 只当 baseline——$V$ 不准也不会带偏期望（只影响方差），但要等 episode 结束，噪声大。
 - $\delta_t$（一步 TD）：只用一步真实奖励，其余交给 critic；每步都能更新、噪声小，但 critic 不准时有偏差。
 - $\hat A^{(n)}_t$：$n$ 越大，bootstrap 越少、采样噪声越多。
 
-**资格迹的直觉**：$e^\pi_t$ 是最近若干个 score function 的衰减累加。当某一步出现较大的 δ（例如终于到达 +1），不只最后一个动作，之前几步的动作也按 $(\gamma\lambda)^k$ 分到功劳。注意迹是**带正负号的向量**，不是访问次数：例如两步都在同一个状态（两个动作，$\gamma\lambda_\pi=0.72$），第 0 步的 score 是 $g_0=(-0.5,0.5)$、第 1 步是 $g_1=(0.5,-0.5)$，则 $e^\pi_1=0.72\,g_0+g_1=(0.14,-0.14)$——前后两步方向相反，大部分相互抵消了。当前的 δ 乘的就是这个累积后的向量。若两步在不同状态，它们改的是不同行的偏好，在迹里各占各的位置，不会抵消。
+**资格迹的直觉**：$e^\pi_t$ 是最近若干个 score function 的衰减累加。当某一步出现较大的 δ（例如终于到达 +1），不只最后一个动作，之前几步的动作也按 $(\gamma\lambda)^k$ 分到功劳。注意迹是**带正负号的向量**，不是访问次数：例如两步都在同一个状态（两个动作，$\gamma=0.9$、$\lambda_\pi=0.8$，$\gamma\lambda_\pi=0.72$），第 0 步的 score 是 $g_0=(-0.5,0.5)$、第 1 步是 $g_1=(0.5,-0.5)$，则 $e^\pi_1=0.72\,g_0+g_1=(0.14,-0.14)$——前后两步方向相反，大部分相互抵消了。当前的 δ 乘的就是这个累积后的向量。若两步在不同状态，它们改的是不同行的偏好，在迹里各占各的位置，不会抵消。
 
 **课件总结的共同模式**：policy 更新 = 学习率 × 评价信号 × policy score gradient。设计时问三个问题：用什么来评价动作？target 往前看多远？哪些参数得到功劳？
 `,
@@ -348,7 +348,7 @@ $$\mathbb E[\delta_t\mid s_t=s,a_t=a]=\mathbb E\big[r_{t+1}+\gamma v^\pi(s_{t+1}
 `,
     formulas: [TDAC, {
       title: 'Advantage actor–critic（A2C）',
-      latex: R`\htmlClass{fx-v}{V_{\mathbf w}(s)=\sum_b\pi_\theta(b\mid s)Q_{\mathbf w}(s,b)},\qquad \htmlClass{fx-a}{A_{\mathbf w}(s,a)=Q_{\mathbf w}(s,a)-V_{\mathbf w}(s)},\qquad \htmlClass{fx-theta}{\theta\leftarrow\theta+\alpha\,A_{\mathbf w}(s_t,a_t)\,g_t}`,
+      latex: R`\begin{gathered}\htmlClass{fx-v}{V_{\mathbf w}(s)=\sum_b\pi_\theta(b\mid s)Q_{\mathbf w}(s,b)}\\\htmlClass{fx-a}{A_{\mathbf w}(s,a)=Q_{\mathbf w}(s,a)-V_{\mathbf w}(s)},\qquad \htmlClass{fx-theta}{\theta\leftarrow\theta+\alpha\,A_{\mathbf w}(s_t,a_t)\,g_t}\end{gathered}`,
       parts: [
         { key: 'v', label: '当前 policy 下的平均动作价值', color: 'blue', text: '用 actor 的概率给 critic 的 Q 加权平均，得到这个状态的“平常水平”。机器人：$0.5\\times101+0.5\\times99=100$。' },
         { key: 'a', label: 'advantage：比平常好多少', color: 'green', text: '机器人：$A(s_0,A)=+1$，$A(s_0,B)=-1$。这是**相对**评价；环境实际支付的仍是 101 / 99。critic 不准时，不一定立刻得到这些值。' },
@@ -364,7 +364,7 @@ $$\mathbb E[\delta_t\mid s_t=s,a_t=a]=\mathbb E\big[r_{t+1}+\gamma v^\pi(s_{t+1}
       ]
     }, {
       title: 'TD(λ) actor–critic 的资格迹',
-      latex: R`\htmlClass{fx-ev}{e^V_t=\gamma\lambda_Ve^V_{t-1}+\nabla_{\mathbf w}V_{\mathbf w}(s_t)},\qquad \htmlClass{fx-ep}{e^\pi_t=\gamma\lambda_\pi e^\pi_{t-1}+g_t},\qquad \htmlClass{fx-up}{\mathbf w\leftarrow\mathbf w+\beta\delta_te^V_t,\ \ \theta\leftarrow\theta+\alpha\delta_te^\pi_t}`,
+      latex: R`\begin{gathered}\htmlClass{fx-ev}{e^V_t=\gamma\lambda_Ve^V_{t-1}+\nabla_{\mathbf w}V_{\mathbf w}(s_t)},\qquad \htmlClass{fx-ep}{e^\pi_t=\gamma\lambda_\pi e^\pi_{t-1}+g_t}\\\htmlClass{fx-up}{\mathbf w\leftarrow\mathbf w+\beta\delta_te^V_t,\ \ \theta\leftarrow\theta+\alpha\delta_te^\pi_t}\end{gathered}`,
       parts: [
         { key: 'ev', label: 'critic 的迹', color: 'blue', text: '最近访问过的状态的价值梯度的衰减累加。tabular 时就是“每个状态最近被访问的衰减计数”。' },
         { key: 'ep', label: 'actor 的迹', color: 'orange', text: '最近若干步 score function 的衰减累加：之前的动作也能分到当前 δ 的功劳，权重 $(\\gamma\\lambda_\\pi)^k$。' },
@@ -414,9 +414,13 @@ $s_9$ 的动作没有等 episode 结束，就因为“到了 critic 认为更好
     viz: { id: 'actorcritic', guide: R`
 **怎么用**：
 
-1. “三种 actor 信号（机器人）”：默认就是例 1。把 $\pi(A\mid s_0)$ 拖到 0.9，看 $V$ 和优势怎样变化；把 TD critic 的 $V_w(s_0)$ 拖离 100，看 TD 信号怎样跟着偏移（critic 不准 → 优势估计有偏）。
-2. “TD actor–critic 逐步看”：连续点 Next Step。前面很多步 δ = 0，直到第一次进入终止格。默认种子下先掉进的是 $s_7$（−1）：第 38 步在 $s_6$ 选 Down，δ = −1，$V(s_6)$ 变成 −0.1，Down 被削弱；前 6 条 episode 都终止在 $s_7$，第 7 条才第一次到达 $s_{11}$，那时才出现例 2 的 +1 更新。小细节：$V(s)<0$ 时撞墙原地不动也会得到 $\delta=\gamma V(s)-V(s)=-(1-\gamma)V(s)>0$——扣分被推迟了一步，打了折扣。之后看 $V$ 从两个终点附近往回传，箭头（policy 概率）随之变粗。再点 Run 100 Episodes，看当前 policy 的真实价值 $v^\pi(s_1)$ 随训练上升（最优是 0.5452）。
-3. “学习曲线对比”：同样的 α、β、同样的 γᵗ 约定下，比较 REINFORCE、REINFORCE + learned baseline 与 TD actor–critic 的 $v^\pi(s_1)$（10 个种子的均值 ± 标准差）。在这个回报只在 −1 到 1 之间的小 Gridworld 里，三者平均进度相近，TD actor–critic 的种子间波动最小；baseline 的好处要在回报整体偏移很大的情形（机器人例子）才明显。` },
+1. “三种 actor 信号（机器人）”：默认就是例 1。把 $\pi(A\mid s_0)$ 拖到 0.9，看 $V$ 和优势怎样变化（此时准确的 $V=0.9\times101+0.1\times99=100.8$）；先把 π 拖回 0.5 再做下一步；把 TD critic 的 $V_w(s_0)$ 拖离 100，看 TD 信号怎样跟着偏移（critic 不准 → 优势估计有偏）。
+2. “TD actor–critic 逐步看”（前面很多步 δ = 0，直到第一次进入终止格；单步可以点 Next Step，下面用 Next Episode 更快）：
+   - 2a. 点一次 Next Episode，会停在第 38 步：在 $s_6$ 选 Down，左滑（面朝下时左手边是东）进入 $s_7$，δ = −1，$V(s_6)=-0.1$，Down 被削弱。
+   - 2b. 再点 5 次 Next Episode（都终止在 $s_7$），第 7 次才到 $s_{11}$：δ ≈ 1.007、$V(s_{10})\approx0.094$，和例 2 很接近；不完全相同，是因为此前 $V(s_{10})$ 已被改成约 −0.007。
+   - 2c. 小细节：$V(s)<0$ 时撞墙原地不动也会得到 $\delta=\gamma V(s)-V(s)=-(1-\gamma)V(s)>0$（扣分被推迟了一步，打了折扣），所以在 V 为负的格子里，actor 会略微强化撞墙的动作——critic 还不准时的正常现象。
+   - 2d. 再点 Run 100 Episodes，看 $V$ 从两个终点附近往回传、箭头（policy 概率）变粗，当前 policy 的真实价值 $v^\pi(s_1)$ 随训练上升（从 −0.066 到约 0.35；最优是 0.5452）。
+3. “学习曲线对比”：同样的 α、β、同样的 γᵗ 约定下，比较 REINFORCE、REINFORCE + learned baseline 与 TD actor–critic 的 $v^\pi(s_1)$（10 个种子的均值 ± 标准差）。在这个回报只在 −1 到 1 之间的小 Gridworld 里，三者平均进度相近，TD actor–critic 的种子间波动最小；baseline 的好处要在回报整体偏移很大的情形（机器人例子）才明显。前几百条里 learned baseline 可能比不带 baseline 更差、波动更大：V 从 0 开始学、还不准时，减掉它不一定有帮助（和机器人例子里 baseline“慢热”是同一件事）。表里的“±”是 10 个种子之间最终 policy 的差异，只能间接反映单次更新的噪声。` },
     compare: R`
 | | REINFORCE | REINFORCE + baseline | Q actor–critic | A2C | TD actor–critic | n-step / TD(λ) actor–critic |
 |---|---|---|---|---|---|---|
@@ -434,7 +438,7 @@ $s_9$ 的动作没有等 episode 结束，就因为“到了 critic 认为更好
       { wrong: 'A2C 的 advantage $+1/-1$ 意味着环境奖励变成了 +1/−1。', right: '环境仍然支付 101/99。advantage 是 critic 给出的相对评价，只用于 actor 的更新。' },
       { wrong: 'TD error 永远是 advantage 的无偏估计。', right: '只有 $V$ 是准确的 $v^\\pi$ 时，$\\mathbb E[\\delta_t\\mid s,a]=A^\\pi(s,a)$。$V_{\\mathbf w}$ 有近似误差时会有偏差。' },
       { wrong: '终止状态的 $V(s_{t+1})$ 为 0，是因为还没学到。', right: '终止状态之后没有奖励，按定义 $V=0$；更新时必须把 bootstrap 项设为 0，而不是用表里的任何数。' },
-      { wrong: '先更新 critic，再用新的 critic 值计算 actor 的信号。', right: '课件：两个更新都用旧参数计算（同一个 δ）。' },
+      { wrong: '先更新 critic，再用新的 critic 值计算 actor 的信号。', right: '课件：两个更新都用旧参数计算（同一个 δ）。若先更新 $V(s)$ 再算，δ 会变成 $(1-\\beta)\\delta$（tabular、$s\'\\ne s$ 时），actor 拿到的信号被打了折，就不是课件的算法了。' },
       { wrong: 'TD(λ) actor–critic 的迹可以跨 episode 保留。', right: '迹初始化为 0，并在每个 episode 之间重置；否则上一个 episode 的动作会错误地分到功劳。' }
     ],
     quiz: [

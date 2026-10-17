@@ -133,7 +133,7 @@
         set: util.merge({ 'pick.op': 1, 'pick.tx': bx(sp.chosen), 'scleg.op': 1, 'note.text': sp.note || '' },
           util.each(2, b => ({ ['sc' + b + '.op']: 1, ['scl' + b + '.op']: 1, ['sc' + b + '.d']: util.arrow(bx(b) + BW / 2 + 16, BASE - hb(h[b]), bx(b) + BW / 2 + 16, BASE - hb(h[b]) - score[b] * 70, 7), ['scl' + b + '.text']: (score[b] >= 0 ? '+' : '−') + util.fmt(Math.abs(score[b]), 5), ['scl' + b + '.y']: BASE - hb(h[b]) - score[b] * 70 + (score[b] >= 0 ? 6 : -6) }))),
         dur: 1100, hl: ['score', 'G'],
-        cap: sp.cap1 || ('选中 ' + labels[sp.chosen] + '，$G=' + sp.G + '$。score $\\mathbb 1\\{b=A_t\\}-\\pi$（就是 $\\partial\\log\\pi(A_t)/\\partial h(b)$，告诉每个偏好该往哪边改）：被选的 $+' + util.fmt(score[sp.chosen], 5) + '$，另一个 $' + util.fmt(score[1 - sp.chosen], 5) + '$——两者相加为 0。')
+        cap: sp.cap1 || ('选中 ' + labels[sp.chosen] + '，$G=' + sp.G + '$。score（得分函数）$\\mathbb 1\\{b=A_t\\}-\\pi$：log 概率对每个偏好 $h(b)$ 的导数 $\\partial\\log\\pi(A_t)/\\partial h(b)$，告诉每个偏好该往哪边改：被选的 $+' + util.fmt(score[sp.chosen], 5) + '$，另一个 $' + util.fmt(score[1 - sp.chosen], 5) + '$——两者相加为 0。')
       });
       frames.push({
         set: util.merge(util.each(2, b => ({ ['hb' + b + '.y']: BASE - Math.max(0, hb(hn[b])), ['hb' + b + '.height']: Math.abs(hb(hn[b])), ['hn' + b + '.num']: hn[b], ['sc' + b + '.op']: 0.25, ['scl' + b + '.op']: 0.25 }))),
@@ -177,7 +177,7 @@
           { chosen: 1, G: 99, alpha: 0.1, note: 'E1：采样到 B', cap2: 'E1 选到 B，$G=99$（一步 episode，$t=0$，$\\gamma^0=1$）：$\\Delta h=0.1\\times99\\times(\\mp0.5)=\\mp4.95$，一步就把偏好推到 $(-4.95,\\ +4.95)$。' },
           { preH: [-4.9969, 4.9969], preNote: 'E2–E100：都采样到 B', preCap: 'E2 到 E100 按 policy 采样，几乎全是 B；每次的 score 只有 $\\pm0.00005$ 左右，偏好只从 $\\pm4.95$ 慢慢漂到 $\\pm4.9969$（课件的数）。', chosen: 0, G: 101, alpha: 0.1, note: 'E101：强制选 A', cap1: 'E101 强制选 A：score 是 $(+0.99995,\\ -0.99995)$——A 的概率太小，所以它的 score 接近 1。', cap2: '$\\Delta h=0.1\\times101\\times(\\pm0.99995)\\approx\\pm10.1$：偏好一下子翻到另一边。' }
         ],
-        outro: '一次 B 就让 $\\pi(A)$ 掉到 0.00005，一次 A 又让它跳到 0.99996：**回报的绝对值太大，每一步都把 softmax 推进饱和区**。两个动作明明差不多好，policy 却来回翻。这就是要减去基线（第 30 章）的原因。'
+        outro: '一次 B 就让 $\\pi(A)$ 掉到 0.00005，一次 A 又让它跳到 0.99996：**回报的绝对值太大，每一步都把 softmax 推进饱和区**。两个动作明明差不多好，policy 却来回翻。这就是下一章要从回报里减去基线的原因。'
       }, 6);
     }
   });
@@ -289,8 +289,8 @@
       frames.push({ cap: '**只有一个模拟器，怎样边试边把搜索集中到好的分支上？** 一开始树里只有根 $s_{10}$。每次迭代都走四步：**选择**（沿树往下）→ **扩展**（加一个新节点）→ **模拟**（从新节点随机走到结束）→ **回传**（把回报加回路径上的每条边）。' });
       // iterations 1-4: root has untried actions -> expand directly
       const its = [
-        { a: 'R', r: 1, G: 0, path: [], gtxt: '终止状态，不用模拟：G = 0', cap: '**迭代 1**：根还有没试过的动作，直接扩展。试 Right：按意图进入 $s_{11}$，$r=+1$，而且是终止状态，所以不用模拟（$G=0$）。' },
-        { a: 'L', r: 0, G: -0.81, path: [{ name: 's_{10}' }, { name: 's_6' }, { name: 's_7' }], gtxt: 'G = 0 + 0.9×0 + 0.81×(−1) = −0.81', cap: '**迭代 2**：根还有没试过的动作，试 Left，到达 $s_9$（$r=0$），把 $s_9$ 加进树。', capR: '从 $s_9$ 随机模拟到结束：$s_{10}$、向南打滑到 $s_6$、再掉进 $s_7$（$-1$），$G=0.81\\times(-1)=-0.81$。模拟走过的状态**不加进树里**（橙色虚线），只用来估计 $s_9$ 值多少。' },
+        { a: 'R', r: 1, G: 0, path: [], gtxt: '终止状态，不用模拟：G = 0', cap: '**迭代 1**：根还有没试过的动作，直接扩展。试 Right：按意图进入 $s_{11}$，$r=+1$，而且是终止状态，所以不用模拟（$G=0$）。$G$ 是从新节点往后随机模拟得到的折扣回报；新节点是终止状态，后面没有奖励，所以 $G=0$。' },
+        { a: 'L', r: 0, G: -0.81, path: [{ name: 's_{10}' }, { name: 's_6' }, { name: 's_7' }], gtxt: 'G = 0 + 0.9×0 + 0.81×(−1) = −0.81', cap: '**迭代 2**：根还有没试过的动作，试 Left，到达 $s_9$（$r=0$），把 $s_9$ 加进树。', capR: '从 $s_9$ 随机模拟到结束：到 $s_{10}$ 后随机选到 Right，向右打滑（Right 的右边是南）到 $s_6$，再往右掉进 $s_7$；$-1$ 是第 3 步的奖励，乘 $\\gamma^2=0.81$：$G=0.81\\times(-1)=-0.81$。模拟走过的状态**不加进树里**（橙色虚线），只用来估计 $s_9$ 值多少。' },
         { a: 'U', r: 0, G: 1, path: [{ name: 's_{11}' }], gtxt: 'G = 1', cap: '**迭代 3**：试 Up，撞边界留在 $s_{10}$——这也是一个新节点（深度 1 的 $s_{10}$）。', capR: '从深度 1 的 $s_{10}$ 模拟：一步进 $s_{11}$，$G=1$。' },
         { a: 'D', r: 0, G: -1, path: [{ name: 's_7' }], gtxt: 'G = −1', cap: '**迭代 4**：试 Down，到达 $s_6$。', capR: '从 $s_6$ 模拟：掉进 $s_7$，$G=-1$。' }
       ];
@@ -300,7 +300,7 @@
         if (it.path.length) frames.push({ set: util.merge(phaseSet(2), roll(kids[it.a], it.path), { 'gtxt.text': it.gtxt }), timing: util.each(3, i => ({ ['ro' + i]: [i * 0.25, i * 0.25 + 0.3], ['roe' + i]: [i * 0.25, i * 0.25 + 0.3], ['rol' + i]: [i * 0.25, i * 0.25 + 0.3] })), dur: 1300, hl: ['G'], cap: it.capR });
         Q[it.a] = ret; N[it.a] = 1; Nroot += 1;
         frames.push({ set: util.merge(phaseSet(3), hideRoll, qLabel(it.a), { 'rootn.num': Nroot, 'gtxt.text': 'R = r + γG = ' + it.r + ' + 0.9 × ' + util.fmt(it.G, 2).replace(/\.?0+$/, '') + ' = ' + util.fmt(ret, 3).replace(/\.?0+$/, '') }), dur: 1000, pulse: ['eq' + it.a], hl: ['r', 'gamma', 'G'],
-          cap: '回传：这条边得到 $R=r+\\gamma G=' + util.fmt(ret, 3).replace(/\.?0+$/, '') + '$，$Q=' + util.fmt(ret, 3).replace(/\.?0+$/, '') + '$，$N=1$。' });
+          cap: '回传：这条边得到 $R=r+\\gamma G=' + util.fmt(ret, 3).replace(/\.?0+$/, '') + '$，$Q=' + util.fmt(ret, 3).replace(/\.?0+$/, '') + '$，$N=1$。' + (n === 0 ? '$R$ 是从这条边算起的回报：这条边自己的奖励 $r$（进 $+1$ 得 1），加上 $\\gamma\\times$ 新节点之后的回报 $G$。' : '') });
       });
       // iteration 5: all tried -> UCB
       const ucb = a => Q[a] + c * Math.sqrt(Math.log(Nroot) / N[a]);

@@ -24,14 +24,14 @@
     { zh: '节点扩展', en: 'Node Expansion', def: R`通过对节点所在状态 $s$ 尝试应用所有适用动作，生成所有后继节点的过程。图搜索中，被展开的状态记入 Closed 表；按课件伪代码，节点弹出时先查重，已在 Closed 中的直接丢弃（A* 中 $g$ 更小时重新打开）。`, ch: 'a03' },
     { zh: '完备性与最优性', en: 'Completeness / Optimality', def: R`评估搜索策略的两大保证：完备性保证若问题有解则算法必然能找到解；最优性保证返回的解具有最低总代价。`, ch: 'a03' },
     { zh: '分支因子与目标深度', en: 'Branching Factor / Goal Depth', sym: R`b,\ d`, def: R`决定搜索复杂度的两项基本特征：分支因子 $b$ 表示每个状态最多拥有的后继状态数量；目标深度 $d$ 表示到达最浅目标状态所需的动作步数。`, ch: 'a03' },
-    { zh: '广度优先搜索', en: 'Breadth-First Search (BFS / BrFS)', def: R`按节点生成的时间顺序以先进先出（FIFO）展开节点。动作代价均匀时满足最优性与完备性；时间与空间复杂度均为 $O(b^d)$，内存消耗过大是其在规划中的主要障碍。`, ch: 'a03' },
+    { zh: '广度优先搜索', en: 'Breadth-First Search (BFS / BrFS)', def: R`按节点生成的时间顺序以先进先出（FIFO）展开节点。分支因子 $b$ 有限时完备；动作代价均匀时最优；时间与空间复杂度均为 $O(b^d)$，内存消耗过大是其在规划中的主要障碍。`, ch: 'a03' },
     { zh: '深度优先搜索', en: 'Depth-First Search (DFS)', def: R`优先展开最新生成的节点（LIFO 栈式探索）。若最大搜索深度为 $m$，空间复杂度仅为 $O(bm)$；但一般不保证最优性，且在有环或无限状态图中不完备。`, ch: 'a03' },
     { zh: '一致代价搜索', en: 'Uniform-Cost Search (UCS)', def: R`优先队列按从起点出发的路径代价 $g(n)$ 升序弹出节点展开（即 Dijkstra 算法），等价于 $h(n)=0$ 的 A*。在任意正动作代价图中均保证完备性与最优性。`, ch: 'a03' },
     { zh: '迭代加深搜索', en: 'Iterative Deepening Search (IDS)', def: R`外层以逐步递增的深度上限 $L=0,1,2,\dots$ 反复调用深度受限搜索。兼具广度优先的完备性、代价统一时的最优性与深度优先的线性空间开销 $O(bd)$；总生成节点数为 $(d)b+(d-1)b^2+\dots+1\cdot b^d \in O(b^d)$，是未知解深度的首选盲目搜索法。`, ch: 'a03' },
 
     // a04: 宽度搜索：novelty、IW、SIW
     { zh: '新颖度', en: 'Novelty', sym: R`w(s)`, def: R`状态 $s$ 的新颖度 $w(s)$ 定义为：使 $s$ 在搜索历史中**首次**为真的最小原子子集的大小。若 $s$ 首次使某个单原子 $p$ 成立，则 $w(s)=1$；若没有任何单原子为新，但存在原子对 $p \wedge q$ 首次同时成立，则 $w(s)=2$，以此类推。`, ch: 'a04' },
-    { zh: '迭代宽度搜索', en: 'Iterated Width (IW / IW(k))', sym: R`\mathrm{IW}(k)`, def: R`剪掉所有新颖度 $w(s)>k$ 的生成状态的剪枝广度优先搜索，最多扩展 $O(n^k)$ 个状态（$n$ 为原子数）。算法 IW 依次调用 $\mathrm{IW}(0), \mathrm{IW}(1), \dots$。当目标为单原子时基准任务宽度普遍极小，$\mathrm{IW}(k)$ 完备、在均匀代价下最优且复杂度为多项式阶。`, ch: 'a04' },
+    { zh: '迭代宽度搜索', en: 'Iterated Width (IW / IW(k))', sym: R`\mathrm{IW}(k)`, def: R`剪掉所有新颖度 $w(s)>k$ 的生成状态的剪枝广度优先搜索，最多扩展 $O(n^k)$ 个状态（$n$ 为原子数）。算法 IW 依次调用 $\mathrm{IW}(0), \mathrm{IW}(1), \dots$。当目标为单原子时基准任务宽度普遍极小。任务宽度不超过 $k$ 时，$\mathrm{IW}(k)$ 完备、在均匀代价下最优；$k$ 为固定常数时复杂度为多项式阶。`, ch: 'a04' },
     { zh: '序列化迭代宽度搜索', en: 'Serialized Iterated Width (SIW)', def: R`用 IW 求解多目标规划任务的序列化机制：在外层通过对目标集合进行爬山，逐个达成单原子目标；每次调用 IW，找到一个让已满足目标原子数增加的状态就停，再从那里继续。纯盲目搜索却在许多基准上击败了 GBFS + $h_{\mathrm{add}}$。`, ch: 'a04' },
 
     // a05: 启发式函数及其性质
@@ -67,8 +67,8 @@
     { zh: '加法启发式', en: 'Additive Heuristic (h_add)', sym: R`h_{\mathrm{add}}(s)`, def: R`假设各子目标原子独立达成、并将所有单原子子目标的达成代价直接累加来近似 $h^+$ 的启发式。$h_{\mathrm{add}}$ 是悲观估计（$h_{\mathrm{add}} \ge h^+$），不可采纳；当不同目标之间共享正向前置子计划时会发生严重的多重过度计数（Over-counting），但比 $h_{\max}$ 更具指导性。`, ch: 'a10' },
 
     // a11: 松弛计划 h_FF 与 helpful actions
-    { zh: '最佳支持者函数', en: 'Best-Supporter Function', sym: R`\mathrm{bs}(p)`, def: R`为每个尚未达成的单原子事实 $p \in F \setminus s$ 选定一个在松弛意义下代价最小的达成动作：$\mathrm{bs}(p) := \arg\min_{a \in A, p \in \mathrm{Add}(a)} [c(a) + h(s, \mathrm{Pre}(a))]$。可由 $h_{\max}$ 或 $h_{\mathrm{add}}$ 的收敛值导出。`, ch: 'a11' },
-    { zh: '支持图、闭合与良基', en: 'Support Graph / Closed / Well-Founded', def: R`由顶点 $F \cup A$ 及弧 $(p,a)$（$p \in \mathrm{Pre}(a)$）与 $(a,p)$（$a = \mathrm{bs}(p)$）构成的有向图。若有路径通向目标的未达成事实均有 $\mathrm{bs}(p)$ 定义，则称闭合（Closed）；若支持图无有向环，则称良基（Well-Founded）。正动作代价保证由 $h_{\max}$/$h_{\mathrm{add}}$ 导出的支持函数闭合且良基。`, ch: 'a11' },
+    { zh: '最佳支持者函数', en: 'Best-Supporter Function', sym: R`\mathrm{bs}(p)`, def: R`为每个尚未达成、且 $0<h(s,\{p\})<\infty$ 的单原子事实 $p \in F \setminus s$ 选定一个在松弛意义下代价最小的达成动作：$\mathrm{bs}(p) := \arg\min_{a \in A, p \in \mathrm{Add}(a)} [c(a) + h(s, \mathrm{Pre}(a))]$。可由 $h_{\max}$ 或 $h_{\mathrm{add}}$ 的收敛值导出。`, ch: 'a11' },
+    { zh: '支持图、闭合与良基', en: 'Support Graph / Closed / Well-Founded', def: R`由顶点 $F \cup A$ 及弧 $(p,a)$（$p \in \mathrm{Pre}(a)$）与 $(a,p)$（$a = \mathrm{bs}(p)$）构成的有向图。若有路径通向目标的未达成事实均有 $\mathrm{bs}(p)$ 定义，则称闭合（Closed）；若支持图无有向环，则称良基（Well-Founded）。所有 $c(a)>0$ 且 $h^+(s)<\infty$ 时，由 $h_{\max}$/$h_{\mathrm{add}}$ 导出的支持函数闭合且良基（良基只需正代价；闭合还需要目标可达）。`, ch: 'a11' },
     { zh: '松弛计划启发式', en: 'Relaxed Plan Heuristic (h_FF)', sym: R`h_{\mathrm{FF}}(s)`, def: R`从闭合良基的最优支持者函数出发，自目标反向链式提取动作集合 $\mathrm{RPlan}$ 并取其动作代价总和 $\sum_{a \in \mathrm{RPlan}} c(a)$。$h_{\mathrm{FF}}$ 是悲观估计（$h_{\mathrm{FF}} \ge h^+$，不可采纳），但通过集合去重克服了 $h_{\mathrm{add}}$ 的重复计数问题，在满足式规划中表现极佳。`, ch: 'a11' },
     { zh: '有益动作', en: 'Helpful Actions', def: R`在状态 $s$ 提取出的松弛计划 $\mathrm{RPlan}$ 中，同时在当前真实状态 $s$ 适用的动作子集。FF 规划器在强化爬山时仅展开有益动作以大幅削减分支因子；若仅扩展有益动作则不保证完备性。`, ch: 'a11' },
 
@@ -143,7 +143,7 @@
     { zh: 'Q 表', en: 'Q-table', sym: R`Q(s,a)`, def: R`每个状态—动作对存一个独立估计，行是状态、列是动作。一次 transition 只写当前一格；课程 Gridworld 有 36 个需要学习的条目。`, ch: 'c21' },
     { zh: '同策略与异策略', en: 'On-policy / Off-policy', def: R`On-policy 学产生数据的策略自身的价值；off-policy 学另一个策略的价值。判断依据是行为与目标是否一致，不是是否随机，也不是 offline/online。`, ch: 'c22' },
     { zh: '行为策略与目标策略', en: 'Behavior Policy / Target Policy', def: R`行为策略产生训练数据，目标策略是被评价或学习的策略。SARSA 的二者都是训练用 ε-greedy；Q-learning 的行为带探索，目标贪心。`, ch: 'c22' },
-    { zh: '悬崖世界', en: 'Cliffworld', def: R`起点和终点之间有掉落奖励为 −5 的悬崖，用来对照 SARSA 与 Q-learning。前者计入未来探索的代价而绕远，后者评价贪心未来而贴崖，并非 SARSA 自带风险惩罚。`, ch: 'c22' },
+    { zh: '悬崖世界', en: 'Cliffworld', def: R`每走一步奖励 −1；起点和终点之间是悬崖，掉下去奖励 −100 并回到起点（这两个数取自 Sutton & Barto，课件只给了图；本站实验另把进入终点那一步记为 0），用来对照 SARSA 与 Q-learning。前者计入未来探索的代价而绕远，后者评价贪心未来而贴崖，并非 SARSA 自带风险惩罚。`, ch: 'c22' },
     { zh: '价值函数近似', en: 'Value-function Approximation', sym: R`\hat Q(s,a;\mathbf w)`, def: R`用带共享参数的函数代替独立表格条目，适应大或连续状态空间。改变表示不自动改变学习目标、on/off-policy 属性或探索需求。`, ch: 'c23' },
     { zh: '泛化与干扰', en: 'Generalisation / Interference', def: R`共享参数使一处经验影响其他输入的预测，称为泛化。共享不合适时，改善当前样本却损害别处预测，称为干扰。`, ch: 'c23' },
     { zh: '特征与权重', en: 'Feature / Weight', sym: R`\mathbf x,\mathbf w`, def: R`特征描述状态—动作的属性，权重学习这些属性怎样组合成价值。线性模型对参数线性，特征本身可以是非线性变换。`, ch: 'c24' },

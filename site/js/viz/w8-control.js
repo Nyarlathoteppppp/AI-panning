@@ -122,7 +122,7 @@
       cliff,
       step(s, a) {
         const next = base.moveFrom(s, a);
-        if (cliff.has(next)) return { next: base.start, reward: -5, kind: 'cliff', done: false };
+        if (cliff.has(next)) return { next: base.start, reward: -100, kind: 'cliff', done: false };
         return { next, reward: base.isTerminal(next) ? 0 : -1, kind: 'intended', done: base.isTerminal(next) };
       }
     });
@@ -167,7 +167,7 @@
         const out = h('div'), grids = h('div.viz-cols');
         function run() {
           const res = ['sarsa', 'qlearning'].map(algo => {
-            const ag = makeAgent(env, { algo, alpha, epsilon: eps, gamma: 0.9, seed: 3, maxSteps: 300 });
+            const ag = makeAgent(env, { algo, alpha, epsilon: eps, gamma: 0.9, seed: 1, maxSteps: 300 });
             while (ag.episode < episodes) ag.step();
             return ag;
           });
@@ -178,16 +178,17 @@
             // greedy path from start
             const path = [env.start]; let s = env.start; for (let k = 0; k < 30 && !env.isTerminal(s); k++) { const o = env.step(s, pol[s]); if (o.kind === 'cliff') break; s = o.next; path.push(s); }
             const hl = {}; env.cliff.forEach(c => { hl[c] = 'red'; });
-            v.update({ policy: pol, trail: path, highlight: hl, labels: Object.fromEntries([...env.cliff].map(c => [c, '悬崖 −5'])) });
+            v.update({ policy: pol, trail: path, highlight: hl, labels: Object.fromEntries([...env.cliff].map(c => [c, '悬崖 −100'])) });
             grids.put(h('div', h('h4', ag.algo === 'sarsa' ? 'SARSA 学到的贪心路线' : 'Q-learning 学到的贪心路线'), box,
-              h('p.muted', '贪心路线长度 ' + (path.length - 1) + ' 步；训练最后 50 条 episode 的平均 G₀ = ' + fmt(ag.history.slice(-50).reduce((a, b) => a + b.G, 0) / 50, 2))));
+              h('p.muted', '贪心路线长度 ' + (path.length - 1) + ' 步' + (path.length - 1 >= 30 ? '（30 是画图上限：贪心路线在绕圈、没走到终点，训练还不够）' : '') + '；训练最后 50 条 episode 的平均 G₀ = ' + fmt(ag.history.slice(-50).reduce((a, b) => a + b.G, 0) / 50, 2))));
           });
           const W = 20, sm = arr => arr.map((_, i) => { const sl = arr.slice(Math.max(0, i - W + 1), i + 1); return sl.reduce((a, b) => a + b.G, 0) / sl.length; });
           clear(out).put(RL.vizUtil.lineChart([{ values: sm(res[0].history), color: 'blue' }, { values: sm(res[1].history), color: 'red' }], { xlabel: 'episode' }),
             h('div.legend', h('span', h('i', { style: { background: 'var(--c-blue)' } }), 'SARSA'), h('span', h('i', { style: { background: 'var(--c-red)' } }), 'Q-learning')),
+            h('p.muted', '纵轴：每条 episode 的 G₀（最近 20 条的平均，训练时带探索）。'),
             h('p.viz-note', 'Q-learning 的 target 用 max，相当于假设“以后都会走最优（贪心）路线”，所以学到贴着悬崖的最短路线；但训练时行为仍是 ε-greedy，偶尔一步探索就掉下去，训练中的回报更差。SARSA 的 target 包含实际（带探索）的下一动作，学到远离悬崖、更安全的路线。'));
         }
-        body.put(h('p.muted', '课件 Cliffworld 的结论演示（6×4，底行中间四格是悬崖）。本站的演示设定（课件未给出全部数值）：确定性移动，普通一步奖励 −1；掉下悬崖奖励 −5 并回到起点（不是额外再扣 −1）；进入终点奖励 0，γ=0.9。'),
+        body.put(h('p.muted', '课件 Cliffworld 的结论演示（6×4，底行中间四格是悬崖）。本站的演示设定（课件未给出全部数值）：确定性移动，普通一步奖励 −1；掉下悬崖奖励 −100 并回到起点（不是额外再扣 −1；−100 取自 Sutton & Barto 的版本）；进入终点奖励 0，γ=0.9。改了 ε 或 episode 数后要再点“训练两种算法”。'),
           slider('ε', { min: 0.01, max: 0.3, step: 0.01, value: eps, format: v => v.toFixed(2), onInput: v => { eps = v; } }),
           slider('episode 数', { min: 100, max: 1000, step: 50, value: episodes, onInput: v => { episodes = v; } }),
           button('训练两种算法', run, 'btn primary'), grids, out);

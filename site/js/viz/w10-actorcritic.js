@@ -158,7 +158,7 @@
               h('p.viz-note', x.delta > 0 ? 'δ > 0：结果比 critic 预期的好，actor 提高刚才那个动作在 s' + last.s + ' 的概率。' : x.delta < 0 ? 'δ < 0：结果比预期差，actor 降低刚才那个动作的概率。' : 'δ = 0：结果与预期一致，actor 和 critic 都不变（训练刚开始、奖励为 0、V 全为 0 时经常如此）。'),
               last.episodeEnd ? h('p.viz-step', last.truncated ? '本条 episode 达到演示设置的 200 步上限，截断后回到 s1。S′ 不是终止状态，所以这一步照常用了 V(S′)。' : '这一步进入终止状态，episode 结束，智能体回到 s1。') : null);
           } else info.put(h('p.muted', '点 Next Step。格子中的数字是 critic 的 V(s)，箭头是 actor 的 softmax policy（越粗概率越大）。蓝框＝S，绿框＝S′。'));
-          clear(stats).put(readout([['已完成 episode', String(ep)], ['本条已走步数', String(t)], ['当前随机 policy 的真实价值 v<sup>π</sup>(s1)', fmt(dp.policyEvaluationExact(g, pol)[1], 4) + '（最优 0.5452）'], ['critic 的估计 V(s1)', fmt(V[1], 4)]]));
+          clear(stats).put(readout([['已完成 episode', String(ep)], ['本条已走步数', String(t)], ['当前 policy（softmax，带随机性）的真实价值 v<sup>π</sup>(s1)', fmt(dp.policyEvaluationExact(g, pol)[1], 4) + '（最优 0.5452）'], ['critic 的估计 V(s1)', fmt(V[1], 4)]]));
           clear(tableBox).put(h('details', h('summary', '全部状态的 h 与 π'), table(['state', ...g.actions.map(a => 'π(' + AN[a] + ')'), ...g.actions.map(a => 'h(' + AN[a] + ')'), 'V(s)'],
             g.nonTerminal.map(st => { const p = L.softmax(H[st]); return ['s' + st, ...p.map(v => fmt(v, 3)), ...H[st].map(v => fmt(v, 2)), fmt(V[st], 3)]; }))));
           clear(chartBox).put(hist.length > 1 ? [RL.vizUtil.lineChart([{ values: hist, color: 'blue' }, { values: hist.map(() => 0.5452), color: 'gray', dash: '4 3' }], { xlabel: 'episode / 10', min: -0.2, max: 0.6 }),
